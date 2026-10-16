@@ -14,42 +14,13 @@ const attrs = ( object ) =>
 		.join( '' );
 
 /**
- * A Video Banner with a toggle.
+ * A Video Banner with a heading.
  *
  * @param {Object} htmlAttributes The Container's htmlAttributes.
- * @param {Object} [toggle]       { tagName, htmlAttributes } for the toggle.
  */
-function banner( htmlAttributes, toggle = {} ) {
-	const id = uid();
-	const tagName = toggle.tagName || 'button';
-	const toggleAttributes = {
-		'data-boim-video-part': 'toggle',
-		...( 'button' === tagName ? { type: 'button' } : {} ),
-		...toggle.htmlAttributes,
-	};
-	const textId = uid();
-	const toggleBlock =
-		'div' === tagName
-			? `<!-- wp:generateblocks/element ${ JSON.stringify( {
-					uniqueId: textId,
-					tagName,
-					htmlAttributes: toggleAttributes,
-			  } ) } --><div${ attrs(
-					toggleAttributes
-			  ) }><!-- wp:generateblocks/text ${ JSON.stringify( {
-					uniqueId: uid(),
-					tagName: 'span',
-			  } ) } --><span class="gb-text">Pause video</span><!-- /wp:generateblocks/text --></div><!-- /wp:generateblocks/element -->`
-			: `<!-- wp:generateblocks/text ${ JSON.stringify( {
-					uniqueId: textId,
-					tagName,
-					htmlAttributes: toggleAttributes,
-			  } ) } --><${ tagName } class="gb-text"${ attrs(
-					toggleAttributes
-			  ) }>Pause video</${ tagName }><!-- /wp:generateblocks/text -->`;
-
+function banner( htmlAttributes ) {
 	return `<!-- wp:generateblocks/element ${ JSON.stringify( {
-		uniqueId: id,
+		uniqueId: uid(),
 		tagName: 'section',
 		htmlAttributes,
 	} ) } --><section${ attrs(
@@ -57,7 +28,7 @@ function banner( htmlAttributes, toggle = {} ) {
 	) }><!-- wp:generateblocks/text ${ JSON.stringify( {
 		uniqueId: uid(),
 		tagName: 'h2',
-	} ) } --><h2 class="gb-text">Banner</h2><!-- /wp:generateblocks/text -->${ toggleBlock }</section><!-- /wp:generateblocks/element -->`;
+	} ) } --><h2 class="gb-text">Banner</h2><!-- /wp:generateblocks/text --></section><!-- /wp:generateblocks/element -->`;
 }
 
 module.exports = { banner };

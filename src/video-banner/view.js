@@ -1,14 +1,16 @@
 /**
  * Video Banner, front end.
  *
- * The server has rendered the layer (poster + an empty <video>) and the pause
- * toggle's state. This decides when the video may load and play:
+ * The server has rendered the layer (an empty, muted, looping <video>). This
+ * decides when the video may load and play:
  *
- * - never on a viewport the editor switched off ("Disable on mobile/tablet"),
+ * - never at or below the "Disable on mobile" width,
  * - not until the banner is near the viewport,
- * - not automatically for visitors who prefer reduced motion or save data
- *   (they can still press play),
+ * - never for visitors who prefer reduced motion or save data,
  * - paused while off-screen or in a background tab.
+ *
+ * Until it plays, and wherever it's switched off, the banner's own
+ * GenerateBlocks background shows.
  *
  * The config in data-boim-video-banner could be forged (anyone who can add
  * HTML can write one), so every value is checked again here.
@@ -16,14 +18,8 @@
 import './style.scss';
 
 const SELECTOR = '[data-boim-video-banner]';
-const TOGGLE = '[data-boim-video-part="toggle"]';
 const TYPES = [ 'video/mp4', 'video/webm', 'video/ogg' ];
-
-// GenerateBlocks' default breakpoints; the same as style.scss.
-const DEVICES = {
-	mobile: '(max-width: 767px)',
-	tablet: '(min-width: 768px) and (max-width: 1024px)',
-};
+const MAX_BREAKPOINT = 4000; // The same clamp as the server.
 
 const reducedMotion = window.matchMedia( '(prefers-reduced-motion: reduce)' );
 const saveData = Boolean( window.navigator.connection?.saveData );
@@ -33,7 +29,7 @@ const banners = new Set();
  * The checked config, or null.
  *
  * @param {HTMLElement} root Banner.
- * @return {Object|null} { sources, hide, loop }.
+ * @return {Object|null} { sources, maxWidth }.
  */
 function readConfig( root ) {
 	let config;
@@ -71,28 +67,28 @@ function readConfig( root ) {
 		} )
 		.filter( Boolean );
 
-	// Own keys only: a forged "__proto__" or "constructor" must not reach the
-	// prototype. (hasOwnProperty.call rather than Object.hasOwn, for older Safari.)
-	const hide = ( Array.isArray( config.hide ) ? config.hide : [] ).filter(
-		( device ) =>
-			'string' === typeof device &&
-			Object.prototype.hasOwnProperty.call( DEVICES, device )
-	);
+	// A whole number of pixels; anything else means "never switched off".
+	const width = config.maxWidth;
+	const maxWidth =
+		Number.isInteger( width ) && width > 0
+			? Math.min( width, MAX_BREAKPOINT )
+			: 0;
 
-	return { sources, hide, loop: false !== config.loop };
+	return { sources, maxWidth };
 }
 
 /**
- * Whether the video should be playing if it could: the visitor's choice,
- * otherwise autoplay unless they prefer reduced motion or save data.
+ * Whether the video is switched on for this visitor and screen size.
  *
  * @param {Object} banner Banner state.
- * @return {boolean} Wants to play.
+ * @return {boolean} Enabled.
  */
-const wantsPlay = ( banner ) =>
-	null === banner.choice
-		? ! reducedMotion.matches && ! saveData && ! banner.blocked
-		: banner.choice;
+const isEnabled = ( banner ) =>
+	! banner.failed &&
+	! banner.blocked &&
+	! banner.media?.matches &&
+	! reducedMotion.matches &&
+	! saveData;
 
 /**
  * Attach the source(s), once. Until now the browser had nothing to download.
@@ -108,7 +104,7 @@ function load( banner ) {
 
 	banner.loaded = true;
 	video.muted = true; // Muted video may autoplay; there is never sound.
-	video.loop = config.loop;
+	video.loop = true;
 
 	config.sources.forEach( ( { src, type }, index ) => {
 		const source = video.ownerDocument.createElement( 'source' );
@@ -131,44 +127,27 @@ function load( banner ) {
 }
 
 /**
- * Bring the video and the toggle in line with the current state.
+ * Bring the video in line with the current state.
  *
  * @param {Object} banner Banner state.
  */
 function update( banner ) {
-	const { video, toggles, media } = banner;
-	const available = ! banner.failed && ! media?.matches;
-	const play =
-		available && banner.near && ! document.hidden && wantsPlay( banner );
+	const { video } = banner;
+	const enabled = isEnabled( banner );
 
-	toggles.forEach( ( toggle ) => {
-		// Don't leave focus on a button that's about to disappear.
-		if (
-			! available &&
-			toggle.contains( toggle.ownerDocument.activeElement )
-		) {
-			toggle.blur();
-		}
+	if ( ! enabled ) {
+		// The banner's own background shows instead of a frozen frame
+		// (also stopping a fade-in that's still running).
+		video.getAnimations?.().forEach( ( animation ) => animation.cancel() );
+		video.style.opacity = '0';
+	}
 
-		toggle.hidden = ! available;
-		toggle.setAttribute(
-			'aria-pressed',
-			wantsPlay( banner ) ? 'false' : 'true'
-		);
-		toggle.setAttribute(
-			'data-boim-state',
-			wantsPlay( banner ) ? 'playing' : 'paused'
-		);
-	} );
-
-	if ( play ) {
+	if ( enabled && banner.near && ! document.hidden ) {
 		load( banner );
 
-		const promise = video.play();
-
-		// Autoplay can still be refused (e.g. low-power mode): show it as paused.
-		promise?.catch( ( error ) => {
-			if ( 'NotAllowedError' === error?.name && null === banner.choice ) {
+		// Autoplay can still be refused (e.g. low-power mode): leave it off.
+		video.play()?.catch( ( error ) => {
+			if ( 'NotAllowedError' === error?.name ) {
 				banner.blocked = true;
 				update( banner );
 			}
@@ -179,19 +158,22 @@ function update( banner ) {
 }
 
 /**
- * Fade the video in over the poster the first time it really plays.
- * Web Animations, not a class: "remove unused CSS" tools can't strip it.
+ * Fade the video in over the banner's background when it plays. Web
+ * Animations, not a class: "remove unused CSS" tools can't strip it.
  *
- * @param {HTMLVideoElement} video Video.
+ * @param {Object} banner Banner state.
  */
-function reveal( video ) {
-	if ( '1' === video.style.opacity ) {
+function reveal( banner ) {
+	const { video } = banner;
+
+	// Already shown, or switched off since play() was called.
+	if ( '1' === video.style.opacity || ! isEnabled( banner ) ) {
 		return;
 	}
 
 	video.style.opacity = '1';
 
-	if ( ! reducedMotion.matches && video.animate ) {
+	if ( video.animate ) {
 		video.animate( [ { opacity: 0 }, { opacity: 1 } ], {
 			duration: 400,
 			easing: 'ease-out',
@@ -229,29 +211,18 @@ function setup( root ) {
 	const video = root.querySelector(
 		':scope > .boim-video-banner__media > video.boim-video-banner__video'
 	);
-	// This banner's own toggles, not those of a banner nested inside it.
-	const toggles = [ ...root.querySelectorAll( TOGGLE ) ].filter(
-		( toggle ) => toggle.closest( SELECTOR ) === root
-	);
 
 	if ( ! config || ! config.sources.length || ! video ) {
-		toggles.forEach( ( toggle ) => ( toggle.hidden = true ) );
 		return;
 	}
 
 	const banner = {
 		root,
 		video,
-		toggles,
 		config,
-		media: config.hide.length
-			? window.matchMedia(
-					config.hide
-						.map( ( device ) => DEVICES[ device ] )
-						.join( ', ' )
-			  )
+		media: config.maxWidth
+			? window.matchMedia( `(max-width: ${ config.maxWidth }px)` )
 			: null,
-		choice: null, // The visitor's own play/pause, once they've used the toggle.
 		blocked: false,
 		near: ! observer, // Without IntersectionObserver, treat it as visible.
 		loaded: false,
@@ -261,35 +232,8 @@ function setup( root ) {
 	root.boimVideoBanner = banner;
 	banners.add( banner );
 
-	video.addEventListener( 'playing', () => reveal( video ) );
-	video.addEventListener( 'ended', () => {
-		banner.choice = false; // Not looping: it stopped, so the toggle offers play.
-		update( banner );
-	} );
+	video.addEventListener( 'playing', () => reveal( banner ) );
 	banner.media?.addEventListener( 'change', () => update( banner ) );
-
-	const toggle = ( event ) => {
-		event.preventDefault(); // A link used as the toggle mustn't navigate.
-		banner.choice = ! wantsPlay( banner );
-		banner.blocked = false;
-		update( banner );
-	};
-
-	toggles.forEach( ( button ) => {
-		button.addEventListener( 'click', toggle );
-
-		if ( 'BUTTON' !== button.tagName ) {
-			button.addEventListener( 'keydown', ( event ) => {
-				// Space for every role="button"; Enter too, except on links (Enter already clicks them).
-				if (
-					' ' === event.key ||
-					( 'Enter' === event.key && 'A' !== button.tagName )
-				) {
-					toggle( event );
-				}
-			} );
-		}
-	} );
 
 	update( banner );
 	observer?.observe( root );

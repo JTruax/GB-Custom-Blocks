@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       BOIM Blocks
- * Description:       A Video Banner for GenerateBlocks: any GenerateBlocks Container can play a video file as its background, with options to switch the video off on mobile and tablet.
+ * Description:       A Video Banner for GenerateBlocks: any GenerateBlocks Container can play a looping video file as its background, switched off below a screen width you choose.
  * Version:           0.1.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
@@ -71,10 +71,11 @@ function boim_register_assets() {
 
 add_action( 'enqueue_block_editor_assets', 'boim_editor_assets' );
 /**
- * Editor script. It has to run before GenerateBlocks registers its Container
- * block, so the Video Banner variation is listed ahead of GB's own Container
- * variation (WordPress shows the first match as the block's name). Listing
- * it as a dependency of GB's Container script makes WordPress print it first.
+ * Editor script and panel styles. The script has to run before GenerateBlocks
+ * registers its Container block, so the Video Banner variation is listed ahead
+ * of GB's own Container variation (WordPress shows the first match as the
+ * block's name). Listing it as a dependency of GB's Container script makes
+ * WordPress print it first.
  */
 function boim_editor_assets() {
 	if ( ! wp_script_is( 'boim-video-banner-editor', 'registered' ) ) {
@@ -83,21 +84,12 @@ function boim_editor_assets() {
 
 	wp_enqueue_script( 'boim-video-banner-editor' );
 	wp_set_script_translations( 'boim-video-banner-editor', 'boim-blocks' );
+	wp_enqueue_style( 'boim-video-banner-editor' ); // The sidebar panel, not the canvas.
 
 	$container = wp_scripts()->query( generate_block_asset_handle( 'generateblocks/element', 'editorScript' ), 'registered' );
 
 	if ( $container && ! in_array( 'boim-video-banner-editor', $container->deps, true ) ) {
 		$container->deps[] = 'boim-video-banner-editor';
-	}
-}
-
-add_action( 'enqueue_block_assets', 'boim_editor_canvas_styles' );
-/**
- * The editor canvas is an iframe: enqueue_block_assets is what reaches it.
- */
-function boim_editor_canvas_styles() {
-	if ( is_admin() && wp_style_is( 'boim-video-banner-editor', 'registered' ) ) {
-		wp_enqueue_style( 'boim-video-banner-editor' );
 	}
 }
 

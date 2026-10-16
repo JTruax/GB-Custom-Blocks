@@ -18,7 +18,6 @@
 	pointer-events: none;
 }
 
-.boim-video-banner__poster,
 .boim-video-banner__video {
 	position: absolute;
 	inset: 0;
@@ -28,35 +27,9 @@
 	height: 100%;
 	margin: 0;
 	object-fit: cover;
-}
 
-// Shown by the script once it actually plays, so the poster (or the
-// banner's background) shows until then.
-.boim-video-banner__video {
+	// Shown by the script (inline opacity) once it actually plays, so the
+	// banner's own background shows until then, and wherever the video is
+	// switched off.
 	opacity: 0;
-}
-
-// The browser hides [hidden] with display:none, but a GB display value on
-// the button would beat that.
-[data-boim-video-part="toggle"][hidden] {
-	display: none !important;
-}
-
-// "Disable on mobile / tablet": hidden by CSS from the first paint, so the
-// pause button never flashes. The script never loads the file there either.
-// GenerateBlocks' default breakpoints.
-@media (max-width: 767px) {
-
-	.boim-video-hide-mobile > .boim-video-banner__media > .boim-video-banner__video,
-	.boim-video-hide-mobile [data-boim-video-part="toggle"] {
-		display: none !important;
-	}
-}
-
-@media (min-width: 768px) and (max-width: 1024px) {
-
-	.boim-video-hide-tablet > .boim-video-banner__media > .boim-video-banner__video,
-	.boim-video-hide-tablet [data-boim-video-part="toggle"] {
-		display: none !important;
-	}
 }

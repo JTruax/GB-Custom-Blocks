@@ -203,24 +203,13 @@ function videoState( page, id ) {
 		const video = root.querySelector(
 			':scope > .boim-video-banner__media > video'
 		);
-		const toggle = [
-			...root.querySelectorAll( '[data-boim-video-part="toggle"]' ),
-		].find(
-			( element ) =>
-				element.closest( '[data-boim-video-banner]' ) === root
-		);
 
 		return {
 			sources: video.querySelectorAll( 'source' ).length,
 			paused: video.paused,
 			time: video.currentTime,
-			visible: 'none' !== window.getComputedStyle( video ).display,
+			loop: video.loop,
 			opacity: window.getComputedStyle( video ).opacity,
-			pressed: toggle?.getAttribute( 'aria-pressed' ),
-			toggleHidden: toggle
-				? toggle.hidden ||
-				  'none' === window.getComputedStyle( toggle ).display
-				: null,
 		};
 	}, id );
 }

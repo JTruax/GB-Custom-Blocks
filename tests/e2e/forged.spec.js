@@ -18,15 +18,20 @@ const FORGED = {
 	'bad-type': JSON.stringify( {
 		sources: [ { src: '/x.webm', type: 'text/html' } ],
 	} ),
-	'sources-string': JSON.stringify( {
-		sources: 'https://example.invalid/x.webm',
-	} ),
-	'proto-hide': JSON.stringify( {
+	'bad-width': JSON.stringify( {
 		sources: [
 			{ src: 'https://example.invalid/x.webm', type: 'video/webm' },
 		],
-		hide: [ '__proto__', 'constructor', 'toString', { mobile: true } ],
-		loop: 'yes',
+		maxWidth: { valueOf: 767 },
+	} ),
+	'sources-string': JSON.stringify( {
+		sources: 'https://example.invalid/x.webm',
+	} ),
+	'proto-width': JSON.stringify( {
+		sources: [
+			{ src: 'https://example.invalid/x.webm', type: 'video/webm' },
+		],
+		maxWidth: '__proto__',
 	} ),
 };
 
@@ -63,7 +68,6 @@ test( 'forged configs are ignored safely and real banners keep working', async (
 			root.id = `forged-${ id }`;
 			root.setAttribute( 'data-boim-video-banner', config );
 			root.innerHTML =
-				'<button type="button" data-boim-video-part="toggle" aria-pressed="false">Pause video</button>' +
 				'<div class="boim-video-banner__media" aria-hidden="true"><video class="boim-video-banner__video" muted playsinline preload="none"></video></div>';
 			host.prepend( root );
 		} );
@@ -81,17 +85,16 @@ test( 'forged configs are ignored safely and real banners keep working', async (
 				sources: [ ...root.querySelectorAll( 'source' ) ].map(
 					( source ) => source.getAttribute( 'src' )
 				),
-				hidden: root.querySelector( 'button' ).hidden,
 			};
 		}, `forged-${ id }` );
 
-		if ( 'proto-hide' === id ) {
-			// A valid http(s) URL is allowed (it's just a video); the bad hide values are ignored.
-			expect( state.sources ).toEqual( [
+		if ( [ 'proto-width', 'bad-width' ].includes( id ) ) {
+			// A valid http(s) URL is allowed (it's just a video); the bad width is ignored.
+			expect( state.sources, id ).toEqual( [
 				'https://example.invalid/x.webm',
 			] );
 		} else {
-			expect( state, id ).toEqual( { sources: [], hidden: true } );
+			expect( state, id ).toEqual( { sources: [] } );
 		}
 	}
 
@@ -102,7 +105,8 @@ test( 'forged configs are ignored safely and real banners keep working', async (
 		)
 	).toEqual( [] );
 
-	// The real banner still works.
-	await page.locator( '#banner-a > [data-boim-video-part="toggle"]' ).click();
-	expect( ( await videoState( page, 'banner-a' ) ).paused ).toBe( true );
+	// The real banner still plays.
+	await expect
+		.poll( async () => ( await videoState( page, 'banner-a' ) ).paused )
+		.toBe( false );
 } );

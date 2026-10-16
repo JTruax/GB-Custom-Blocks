@@ -10,92 +10,67 @@ const { banner } = require( './markup' );
 const blockViewScript = ( page ) =>
 	page.route( '**/build/video-banner/view.js*', ( route ) => route.abort() );
 
-test( 'a banner gets a decorative, empty video layer and a toggle button', async ( {
+const config = async ( page, selector ) =>
+	JSON.parse(
+		await page.locator( selector ).getAttribute( 'data-boim-video-banner' )
+	);
+
+test( 'a banner gets a decorative, empty, looping video layer', async ( {
 	page,
 } ) => {
 	await blockViewScript( page );
 	await page.goto( DEMO );
 
 	const a = page.locator( '#banner-a' );
-	const config = JSON.parse(
-		await a.getAttribute( 'data-boim-video-banner' )
-	);
 
-	expect( config ).toEqual( {
+	expect( await config( page, '#banner-a' ) ).toEqual( {
 		sources: [
 			{
 				src: expect.stringMatching( /\/sample\.webm$/ ),
 				type: 'video/webm',
 			},
 		],
-		hide: [],
-		loop: true,
+		maxWidth: 0,
 	} );
 	await expect( a ).toHaveClass( /\bboim-has-video\b/ );
 
 	// The raw settings don't reach the page.
-	for ( const name of [
-		'data-boim-video',
-		'data-boim-video-poster',
-		'data-boim-video-hide',
-		'data-boim-video-loop',
-	] ) {
+	for ( const name of [ 'data-boim-video', 'data-boim-video-max-width' ] ) {
 		expect( await a.getAttribute( name ), name ).toBeNull();
 	}
 
 	const media = a.locator( ':scope > .boim-video-banner__media' );
 	await expect( media ).toHaveAttribute( 'aria-hidden', 'true' );
-	await expect(
-		media.locator( 'img.boim-video-banner__poster' )
-	).toHaveAttribute( 'alt', '' );
+	await expect( media.locator( '> *' ) ).toHaveCount( 1 );
 
 	const video = media.locator( 'video' );
 	await expect( video ).toHaveAttribute( 'preload', 'none' );
 	expect(
 		await video.evaluate( ( element ) => [
 			element.muted,
+			element.loop,
 			element.src,
 			element.children.length,
 		] )
-	).toEqual( [ true, '', 0 ] );
+	).toEqual( [ true, true, '', 0 ] );
 
-	const toggle = a.locator( '[data-boim-video-part="toggle"]' );
-	await expect( toggle ).toHaveAttribute( 'type', 'button' );
-	await expect( toggle ).toHaveAttribute( 'aria-pressed', 'false' );
-	await expect( toggle ).toBeVisible();
+	// No pause button or poster any more.
+	await expect( page.locator( '[data-boim-video-part]' ) ).toHaveCount( 0 );
+	await expect( page.locator( '.boim-video-banner__poster' ) ).toHaveCount(
+		0
+	);
 
-	await expect( page.locator( '#banner-b' ) ).toHaveClass(
-		/\bboim-video-hide-mobile\b/
+	expect( ( await config( page, '#banner-b' ) ).maxWidth ).toBe( 767 );
+	expect( ( await config( page, '#banner-c' ) ).maxWidth ).toBe( 1024 );
+	expect( ( await config( page, '#banner-e' ) ).sources[ 0 ].type ).toBe(
+		'video/mp4'
 	);
-	await expect( page.locator( '#banner-c' ) ).toHaveClass(
-		/\bboim-video-hide-tablet\b/
-	);
-	await expect( page.locator( '#banner-d' ) ).toHaveClass(
-		/boim-video-hide-mobile boim-video-hide-tablet/
-	);
-	expect(
-		JSON.parse(
-			await page
-				.locator( '#banner-d' )
-				.getAttribute( 'data-boim-video-banner' )
-		).loop
-	).toBe( false );
-	expect(
-		JSON.parse(
-			await page
-				.locator( '#banner-e' )
-				.getAttribute( 'data-boim-video-banner' )
-		).sources[ 0 ].type
-	).toBe( 'video/mp4' );
 } );
 
-test( 'a nested banner keeps its own toggle', async ( { page } ) => {
+test( 'a nested banner has its own layer', async ( { page } ) => {
 	await blockViewScript( page );
 	await page.goto( DEMO );
 
-	await expect(
-		page.locator( '#banner-f [data-boim-video-part="toggle"]' )
-	).toHaveCount( 2 );
 	await expect(
 		page.locator( '#banner-f > .boim-video-banner__media' )
 	).toHaveCount( 1 );
@@ -104,9 +79,43 @@ test( 'a nested banner keeps its own toggle', async ( { page } ) => {
 	).toHaveCount( 1 );
 } );
 
-test( 'invalid sources leave a plain Container with the toggle hidden', async ( {
+test( 'the breakpoint is a whole number of pixels, defaulting to 767', async ( {
 	page,
 } ) => {
+	const { webm } = await mediaIds( page );
+	const cases = {
+		empty: [ '', 767 ],
+		text: [ 'abc', 767 ],
+		zero: [ '0', 767 ],
+		units: [ '900px', 767 ],
+		custom: [ '900', 900 ],
+		huge: [ '99999', 4000 ],
+	};
+	const path = await testPage(
+		page,
+		'boim-breakpoints',
+		Object.entries( cases )
+			.map( ( [ id, [ value ] ] ) =>
+				banner( {
+					id,
+					'data-boim-video': String( webm ),
+					'data-boim-video-max-width': value,
+				} )
+			)
+			.join( '' )
+	);
+
+	await blockViewScript( page );
+	await page.goto( path );
+
+	for ( const [ id, [ , expected ] ] of Object.entries( cases ) ) {
+		expect( ( await config( page, `#${ id }` ) ).maxWidth, id ).toBe(
+			expected
+		);
+	}
+} );
+
+test( 'invalid sources leave a plain Container', async ( { page } ) => {
 	const { poster } = await mediaIds( page );
 	const cases = {
 		js: { 'data-boim-video': 'javascript:alert(1)' },
@@ -134,48 +143,10 @@ test( 'invalid sources leave a plain Container with the toggle hidden', async ( 
 			await root.getAttribute( 'data-boim-video-banner' ),
 			id
 		).toBeNull();
+		expect( await root.getAttribute( 'data-boim-video' ), id ).toBeNull();
 		await expect(
 			root.locator( '.boim-video-banner__media' ),
 			id
 		).toHaveCount( 0 );
-		await expect(
-			root.locator( '[data-boim-video-part="toggle"]' ),
-			id
-		).toBeHidden();
 	}
-} );
-
-test( 'a toggle that is not a <button> becomes a keyboard-operable button', async ( {
-	page,
-} ) => {
-	const { webm } = await mediaIds( page );
-	const path = await testPage(
-		page,
-		'boim-div-toggle',
-		banner(
-			{
-				id: 'div-toggle',
-				'data-boim-video': String( webm ),
-				'data-boim-video-hide': '__proto__ mobile constructor',
-			},
-			{ tagName: 'div' }
-		)
-	);
-
-	await blockViewScript( page );
-	await page.goto( path );
-
-	const toggle = page.locator(
-		'#div-toggle [data-boim-video-part="toggle"]'
-	);
-	await expect( toggle ).toHaveAttribute( 'role', 'button' );
-	await expect( toggle ).toHaveAttribute( 'tabindex', '0' );
-	await expect( toggle ).toHaveAttribute( 'aria-pressed', 'false' );
-	expect(
-		JSON.parse(
-			await page
-				.locator( '#div-toggle' )
-				.getAttribute( 'data-boim-video-banner' )
-		).hide
-	).toEqual( [ 'mobile' ] );
 } );

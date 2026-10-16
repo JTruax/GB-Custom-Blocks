@@ -58,7 +58,7 @@ function boim_test_attachment( $file, $title ) {
 $boim_media = array(
 	'webm'   => boim_test_attachment( 'sample.webm', 'boim-sample-webm' ),
 	'mp4'    => boim_test_attachment( 'sample.mp4', 'boim-sample-mp4' ),
-	'poster' => boim_test_attachment( 'poster.jpg', 'boim-poster' ),
+	'poster' => boim_test_attachment( 'poster.jpg', 'boim-poster' ), // An image, for the "not a video" test.
 );
 update_option( 'boim_test_media', $boim_media, false );
 

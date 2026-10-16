@@ -10,20 +10,14 @@
 import { __, sprintf } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import {
-	InspectorControls,
-	MediaReplaceFlow,
-	MediaUpload,
-	MediaUploadCheck,
-	store as blockEditorStore,
-} from '@wordpress/block-editor';
+import { InspectorControls, MediaReplaceFlow } from '@wordpress/block-editor';
 import { getBlockType, registerBlockVariation } from '@wordpress/blocks';
 import {
 	Button,
 	ExternalLink,
 	Notice,
 	PanelBody,
-	SelectControl,
+	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
@@ -34,19 +28,10 @@ import { videoBannerIcon } from './icon';
 import './editor.scss';
 
 const CONTAINER = 'generateblocks/element';
-const PART_BLOCKS = [
-	'generateblocks/element',
-	'generateblocks/text',
-	'generateblocks/shape',
-	'generateblocks/media',
-];
 
 const KEY = 'data-boim-video';
-const POSTER = 'data-boim-video-poster';
-const HIDE = 'data-boim-video-hide';
-const LOOP = 'data-boim-video-loop';
-const PART = 'data-boim-video-part';
-const SETTINGS = [ KEY, POSTER, HIDE, LOOP ];
+const BREAKPOINT = 'data-boim-video-max-width';
+const DEFAULT_BREAKPOINT = '767'; // GenerateBlocks' mobile breakpoint.
 
 const OVERLAY_CLASS = 'boim-video-banner--overlay';
 const VIDEO_TYPES = /\.(mp4|m4v|webm|ogv)$/i;
@@ -67,25 +52,6 @@ const htmlAttributesOf = ( attributes ) => {
 
 const isBanner = ( attributes ) =>
 	Object.hasOwn( htmlAttributesOf( attributes ), KEY );
-
-/**
- * Whether a banner's own blocks include a pause toggle (a nested banner's
- * toggle belongs to that banner).
- *
- * @param {Array} blocks Inner blocks.
- * @return {boolean} Found.
- */
-const hasToggle = ( blocks ) =>
-	blocks.some( ( block ) => {
-		if ( CONTAINER === block.name && isBanner( block.attributes ) ) {
-			return false;
-		}
-
-		return (
-			'toggle' === htmlAttributesOf( block.attributes )[ PART ] ||
-			hasToggle( block.innerBlocks || [] )
-		);
-	} );
 
 /**
  * An http(s) URL to a video file, like the server accepts.
@@ -162,16 +128,6 @@ const variation = {
 				],
 			],
 		],
-		[
-			'generateblocks/text',
-			{
-				tagName: 'button',
-				content: __( 'Pause video', 'boim-blocks' ),
-				htmlAttributes: { [ PART ]: 'toggle', type: 'button' },
-				globalClasses: [ 'boim-video-banner__toggle' ],
-				metadata: { name: __( 'Pause toggle', 'boim-blocks' ) },
-			},
-		],
 	],
 	isActive: ( attributes ) => isBanner( attributes ),
 };
@@ -208,34 +164,23 @@ if ( getBlockType( CONTAINER ) ) {
  * @param {Object}   props               Block edit props.
  * @param {Object}   props.attributes    Container attributes.
  * @param {Function} props.setAttributes Attribute setter.
- * @param {string}   props.clientId      Container client id.
  */
-function VideoPanel( { attributes, setAttributes, clientId } ) {
+function VideoPanel( { attributes, setAttributes } ) {
 	const html = htmlAttributesOf( attributes );
 	const source = html[ KEY ];
 	const banner = Object.hasOwn( html, KEY );
 	const sourceId = /^\d+$/.test( String( source ?? '' ) )
 		? Number( source )
 		: 0;
-	const posterId = /^\d+$/.test( String( html[ POSTER ] ?? '' ) )
-		? Number( html[ POSTER ] )
-		: 0;
-	const hide = String( html[ HIDE ] ?? '' ).split( /\s+/ );
+	const mobileOff = Object.hasOwn( html, BREAKPOINT );
 	const [ urlError, setUrlError ] = useState( false );
 
-	const { video, poster, toggle } = useSelect(
-		( select ) => ( {
-			video: sourceId
+	const video = useSelect(
+		( select ) =>
+			sourceId
 				? select( coreStore ).getMedia( sourceId, { context: 'view' } )
 				: null,
-			poster: posterId
-				? select( coreStore ).getMedia( posterId, { context: 'view' } )
-				: null,
-			toggle: banner
-				? hasToggle( select( blockEditorStore ).getBlocks( clientId ) )
-				: true,
-		} ),
-		[ sourceId, posterId, banner, clientId ]
+		[ sourceId ]
 	);
 
 	// Only the keys given change; undefined removes a key. Always a copy.
@@ -253,20 +198,8 @@ function VideoPanel( { attributes, setAttributes, clientId } ) {
 		setAttributes( { htmlAttributes: next } );
 	};
 
-	const setHidden = ( device, on ) => {
-		const devices = [ 'mobile', 'tablet' ].filter( ( item ) =>
-			item === device ? on : hide.includes( item )
-		);
-
-		update( {
-			[ HIDE ]: devices.length ? devices.join( ' ' ) : undefined,
-		} );
-	};
-
 	const removeAll = () =>
-		update(
-			Object.fromEntries( SETTINGS.map( ( key ) => [ key, undefined ] ) )
-		);
+		update( { [ KEY ]: undefined, [ BREAKPOINT ]: undefined } );
 
 	let sourceLabel = __( 'No video chosen yet.', 'boim-blocks' );
 
@@ -337,60 +270,9 @@ function VideoPanel( { attributes, setAttributes, clientId } ) {
 
 			{ banner && (
 				<>
-					<MediaUploadCheck>
-						<MediaUpload
-							allowedTypes={ [ 'image' ] }
-							value={ posterId || undefined }
-							onSelect={ ( media ) =>
-								update( { [ POSTER ]: String( media.id ) } )
-							}
-							render={ ( { open } ) => (
-								<div>
-									{ poster?.source_url && (
-										<img
-											className="boim-video-panel__poster"
-											src={ poster.source_url }
-											alt=""
-										/>
-									) }
-									<div className="boim-video-panel__actions">
-										<Button
-											variant="secondary"
-											onClick={ open }
-										>
-											{ posterId
-												? __(
-														'Replace poster image',
-														'boim-blocks'
-												  )
-												: __(
-														'Choose poster image',
-														'boim-blocks'
-												  ) }
-										</Button>
-										{ posterId > 0 && (
-											<Button
-												variant="tertiary"
-												onClick={ () =>
-													update( {
-														[ POSTER ]: undefined,
-													} )
-												}
-											>
-												{ __(
-													'Remove poster',
-													'boim-blocks'
-												) }
-											</Button>
-										) }
-									</div>
-								</div>
-							) }
-						/>
-					</MediaUploadCheck>
 					<p className="components-base-control__help">
 						{ __(
-							'Shown until the video plays, where the video is switched off, and to visitors who prefer reduced motion. It is also the preview here in the editor.',
+							'The video plays muted and loops. Until it plays, and wherever it is switched off, this block’s own background shows: set a background colour or image in its Styles.',
 							'boim-blocks'
 						) }
 					</p>
@@ -398,36 +280,38 @@ function VideoPanel( { attributes, setAttributes, clientId } ) {
 					<ToggleControl
 						__nextHasNoMarginBottom
 						label={ __( 'Disable on mobile', 'boim-blocks' ) }
-						help={ __(
-							'Up to 767px wide. The video file is never downloaded there.',
-							'boim-blocks'
-						) }
-						checked={ hide.includes( 'mobile' ) }
-						onChange={ ( on ) => setHidden( 'mobile', on ) }
-					/>
-					<ToggleControl
-						__nextHasNoMarginBottom
-						label={ __( 'Disable on tablet', 'boim-blocks' ) }
-						help={ __( '768px to 1024px wide.', 'boim-blocks' ) }
-						checked={ hide.includes( 'tablet' ) }
-						onChange={ ( on ) => setHidden( 'tablet', on ) }
-					/>
-					<ToggleControl
-						__nextHasNoMarginBottom
-						label={ __( 'Loop', 'boim-blocks' ) }
-						checked={ 'false' !== html[ LOOP ] }
+						checked={ mobileOff }
 						onChange={ ( on ) =>
-							update( { [ LOOP ]: on ? undefined : 'false' } )
+							update( {
+								[ BREAKPOINT ]: on
+									? DEFAULT_BREAKPOINT
+									: undefined,
+							} )
 						}
 					/>
-
-					{ ! toggle && (
-						<Notice status="warning" isDismissible={ false }>
-							{ __(
-								'Add a pause button: moving content that lasts more than 5 seconds needs one (WCAG 2.2.2). Select a Text block set to <button> inside this banner and choose “Video banner part → Pause toggle”.',
+					{ mobileOff && (
+						<TextControl
+							__next40pxDefaultSize
+							__nextHasNoMarginBottom
+							type="number"
+							min={ 1 }
+							max={ 4000 }
+							step={ 1 }
+							label={ __( 'Breakpoint (px)', 'boim-blocks' ) }
+							help={ __(
+								'The video is switched off at this screen width and below, and never downloaded there. 767px is GenerateBlocks’ mobile breakpoint.',
 								'boim-blocks'
 							) }
-						</Notice>
+							value={ html[ BREAKPOINT ] ?? '' }
+							onChange={ ( value ) =>
+								update( {
+									[ BREAKPOINT ]: String( value ).replace(
+										/\D/g,
+										''
+									),
+								} )
+							}
+						/>
 					) }
 
 					{ ! ( attributes.globalClasses || [] ).includes(
@@ -460,83 +344,10 @@ function VideoPanel( { attributes, setAttributes, clientId } ) {
 	);
 }
 
-/**
- * The "Video banner part" panel, on GB blocks inside a banner.
- *
- * @param {Object}   props               Block edit props.
- * @param {Object}   props.attributes    Block attributes.
- * @param {Function} props.setAttributes Attribute setter.
- */
-function PartPanel( { attributes, setAttributes } ) {
-	const html = htmlAttributesOf( attributes );
-	const value = html[ PART ] || '';
-
-	return (
-		<PanelBody title={ __( 'Video banner part', 'boim-blocks' ) }>
-			<SelectControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ __( 'This block is the…', 'boim-blocks' ) }
-				value={ value }
-				options={ [
-					{
-						value: '',
-						label: __( 'Nothing special', 'boim-blocks' ),
-					},
-					{
-						value: 'toggle',
-						label: __( 'Pause toggle', 'boim-blocks' ),
-					},
-				] }
-				help={
-					'toggle' === value
-						? __(
-								'Pauses and plays the video. It gets aria-pressed="true" while paused: style that state with the nested selector &[aria-pressed="true"]. Keep the visible text the same in both states, and use a Text block set to <button>. Icon only? Add an aria-label in HTML Attributes.',
-								'boim-blocks'
-						  )
-						: undefined
-				}
-				onChange={ ( next ) => {
-					const updated = { ...html };
-
-					if ( next ) {
-						updated[ PART ] = next;
-					} else {
-						delete updated[ PART ];
-					}
-
-					setAttributes( { htmlAttributes: updated } );
-				} }
-			/>
-		</PanelBody>
-	);
-}
-
-const withVideoPanels = createHigherOrderComponent(
+const withVideoPanel = createHigherOrderComponent(
 	( BlockEdit ) => ( props ) => {
-		const { name, clientId, isSelected } = props;
-		const isPartBlock = PART_BLOCKS.includes( name );
-
-		// Runs for every block in the post: only look at parents for a selected GB block.
-		const insideBanner = useSelect(
-			( select ) => {
-				if ( ! isPartBlock || ! isSelected ) {
-					return false;
-				}
-
-				const { getBlockParents, getBlockName, getBlockAttributes } =
-					select( blockEditorStore );
-
-				return getBlockParents( clientId ).some(
-					( parent ) =>
-						CONTAINER === getBlockName( parent ) &&
-						isBanner( getBlockAttributes( parent ) )
-				);
-			},
-			[ clientId, isPartBlock, isSelected ]
-		);
-
-		if ( ! isSelected || ( CONTAINER !== name && ! insideBanner ) ) {
+		// Runs for every block in the post: only selected Containers get the panel.
+		if ( CONTAINER !== props.name || ! props.isSelected ) {
 			return <BlockEdit { ...props } />;
 		}
 
@@ -544,77 +355,12 @@ const withVideoPanels = createHigherOrderComponent(
 			<>
 				<BlockEdit { ...props } />
 				<InspectorControls>
-					{ CONTAINER === name && <VideoPanel { ...props } /> }
-					{ insideBanner && <PartPanel { ...props } /> }
+					<VideoPanel { ...props } />
 				</InspectorControls>
 			</>
 		);
 	},
-	'withVideoPanels'
+	'withVideoPanel'
 );
 
-addFilter( 'editor.BlockEdit', 'boim/video-banner-panels', withVideoPanels );
-
-/**
- * The poster as the banner's background in the editor canvas, via the
- * block's wrapper props (GB's own edit component is left alone).
- *
- * @param {Object}   props                BlockListBlock props.
- * @param {Function} props.BlockListBlock The wrapped component.
- * @param {number}   props.posterId       Poster attachment id.
- */
-function PosterPreview( { BlockListBlock, posterId, ...props } ) {
-	const url = useSelect(
-		( select ) =>
-			select( coreStore ).getMedia( posterId, { context: 'view' } )
-				?.source_url,
-		[ posterId ]
-	);
-
-	if ( ! url ) {
-		return <BlockListBlock { ...props } />;
-	}
-
-	const wrapperProps = {
-		...props.wrapperProps,
-		'data-boim-editor-poster': '',
-		style: {
-			...props.wrapperProps?.style,
-			'--boim-editor-poster': `url(${ JSON.stringify( url ) })`,
-		},
-	};
-
-	return <BlockListBlock { ...props } wrapperProps={ wrapperProps } />;
-}
-
-const withPosterPreview = createHigherOrderComponent(
-	( BlockListBlock ) => ( props ) => {
-		if ( CONTAINER !== props.name ) {
-			return <BlockListBlock { ...props } />;
-		}
-
-		const html = htmlAttributesOf( props.attributes );
-		const posterId =
-			Object.hasOwn( html, KEY ) &&
-			/^\d+$/.test( String( html[ POSTER ] ?? '' ) )
-				? Number( html[ POSTER ] )
-				: 0;
-
-		return posterId ? (
-			<PosterPreview
-				{ ...props }
-				BlockListBlock={ BlockListBlock }
-				posterId={ posterId }
-			/>
-		) : (
-			<BlockListBlock { ...props } />
-		);
-	},
-	'withPosterPreview'
-);
-
-addFilter(
-	'editor.BlockListBlock',
-	'boim/video-banner-poster',
-	withPosterPreview
-);
+addFilter( 'editor.BlockEdit', 'boim/video-banner-panel', withVideoPanel );

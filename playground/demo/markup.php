@@ -105,19 +105,6 @@ function boim_demo_banner( $key, $settings, $title, $extra = '' ) {
 			. $extra
 	);
 
-	$toggle = boim_demo_text(
-		"vt{$key}00001",
-		'button',
-		'Pause video',
-		array(
-			'htmlAttributes' => array(
-				'data-boim-video-part' => 'toggle',
-				'type'                 => 'button',
-			),
-			'globalClasses'  => array( 'boim-video-banner__toggle' ),
-		)
-	);
-
 	return boim_demo_element(
 		"vb{$key}00001",
 		'section',
@@ -125,82 +112,44 @@ function boim_demo_banner( $key, $settings, $title, $extra = '' ) {
 			'htmlAttributes' => array_merge( array( 'id' => 'banner-' . $key ), $settings ),
 			'globalClasses'  => array( 'boim-video-banner', 'boim-video-banner--overlay' ),
 		),
-		$content . $toggle
+		$content
 	);
 }
 
 /**
  * The whole demo page.
  *
- * @param array $media Attachment ids: webm, mp4, poster.
+ * @param array $media Attachment ids: webm, mp4.
  * @return string
  */
 function boim_demo_markup( $media ) {
-	$video  = (string) $media['webm'];
-	$poster = (string) $media['poster'];
-	$url    = wp_get_attachment_url( $media['mp4'] );
+	$video = (string) $media['webm'];
+	$url   = wp_get_attachment_url( $media['mp4'] );
 
-	$nested = boim_demo_banner(
-		'g',
-		array(
-			'data-boim-video'        => $video,
-			'data-boim-video-poster' => $poster,
-		),
-		'Nested banner'
-	);
+	$nested = boim_demo_banner( 'g', array( 'data-boim-video' => $video ), 'Nested banner' );
 
 	return implode(
 		"\n\n",
 		array(
-			boim_demo_banner(
-				'a',
-				array(
-					'data-boim-video'        => $video,
-					'data-boim-video-poster' => $poster,
-				),
-				'Plays everywhere'
-			),
+			boim_demo_banner( 'a', array( 'data-boim-video' => $video ), 'Plays everywhere' ),
 			boim_demo_banner(
 				'b',
 				array(
-					'data-boim-video'        => $video,
-					'data-boim-video-poster' => $poster,
-					'data-boim-video-hide'   => 'mobile',
+					'data-boim-video'           => $video,
+					'data-boim-video-max-width' => '767',
 				),
-				'Off on mobile'
+				'Off at 767px and below'
 			),
 			boim_demo_banner(
 				'c',
 				array(
-					'data-boim-video'        => $video,
-					'data-boim-video-poster' => $poster,
-					'data-boim-video-hide'   => 'tablet',
+					'data-boim-video'           => $video,
+					'data-boim-video-max-width' => '1024',
 				),
-				'Off on tablet'
+				'Off at 1024px and below'
 			),
-			boim_demo_banner(
-				'd',
-				array(
-					'data-boim-video'      => $video,
-					'data-boim-video-hide' => 'mobile tablet',
-					'data-boim-video-loop' => 'false',
-				),
-				'Off on mobile and tablet, no poster, no loop'
-			),
-			boim_demo_banner(
-				'e',
-				array( 'data-boim-video' => $url ),
-				'From a URL'
-			),
-			boim_demo_banner(
-				'f',
-				array(
-					'data-boim-video'        => $video,
-					'data-boim-video-poster' => $poster,
-				),
-				'Outer banner',
-				$nested
-			),
+			boim_demo_banner( 'e', array( 'data-boim-video' => $url ), 'From a URL' ),
+			boim_demo_banner( 'f', array( 'data-boim-video' => $video ), 'Outer banner', $nested ),
 			boim_demo_element(
 				'sp000001',
 				'div',
@@ -210,14 +159,7 @@ function boim_demo_markup( $media ) {
 				),
 				boim_demo_text( 'spt00001', 'p', 'Spacer, so the next banner starts off-screen.' )
 			),
-			boim_demo_banner(
-				'h',
-				array(
-					'data-boim-video'        => $video,
-					'data-boim-video-poster' => $poster,
-				),
-				'Below the fold'
-			),
+			boim_demo_banner( 'h', array( 'data-boim-video' => $video ), 'Below the fold' ),
 		)
 	);
 }

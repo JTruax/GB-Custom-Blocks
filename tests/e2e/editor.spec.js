@@ -151,7 +151,7 @@ test( 'inserting the variation gives valid blocks that survive a save round trip
 
 	expect( roundTrip.invalid ).toEqual( [] );
 	expect( roundTrip.html ).toContain( 'data-boim-video=""' );
-	expect( roundTrip.html ).toContain( 'data-boim-video-part="toggle"' );
+	expect( roundTrip.html ).not.toContain( 'data-boim-video-part' );
 	expect( await invalidBlocks( page ) ).toEqual( [] );
 } );
 
@@ -170,10 +170,6 @@ test( 'the Video background panel writes htmlAttributes', async ( {
 		await panel.click();
 	}
 
-	await page.getByRole( 'checkbox', { name: 'Disable on mobile' } ).check();
-	await page.getByRole( 'checkbox', { name: 'Disable on tablet' } ).check();
-	await page.getByRole( 'checkbox', { name: 'Loop' } ).uncheck();
-
 	const html = () =>
 		page.evaluate(
 			( id ) =>
@@ -182,29 +178,35 @@ test( 'the Video background panel writes htmlAttributes', async ( {
 					.getBlockAttributes( id ).htmlAttributes,
 			clientId
 		);
+	const field = page.getByRole( 'spinbutton', { name: 'Breakpoint (px)' } );
 
+	// Off by default: no breakpoint field.
+	await expect( field ).toHaveCount( 0 );
+
+	await page.getByRole( 'checkbox', { name: 'Disable on mobile' } ).check();
+	await expect( field ).toHaveValue( '767' );
 	expect( await html() ).toMatchObject( {
-		'data-boim-video-hide': 'mobile tablet',
-		'data-boim-video-loop': 'false',
+		'data-boim-video-max-width': '767',
 	} );
 
-	await page.getByRole( 'checkbox', { name: 'Disable on mobile' } ).uncheck();
-	await page.getByRole( 'checkbox', { name: 'Loop' } ).check();
+	await field.fill( '1024' );
+	expect( ( await html() )[ 'data-boim-video-max-width' ] ).toBe( '1024' );
 
+	await page.getByRole( 'checkbox', { name: 'Disable on mobile' } ).uncheck();
+	await expect( field ).toHaveCount( 0 );
 	const after = await html();
-	expect( after[ 'data-boim-video-hide' ] ).toBe( 'tablet' );
-	expect( after ).not.toHaveProperty( 'data-boim-video-loop' );
+	expect( after ).not.toHaveProperty( 'data-boim-video-max-width' );
 	expect( after ).toHaveProperty( 'id', 'banner-a' ); // Other attributes are kept.
 
-	// The poster previews in the canvas.
-	const canvas = page.frameLocator( 'iframe[name="editor-canvas"]' );
-	const element = canvas.locator( `#block-${ clientId }` );
-	await expect( element ).toHaveAttribute( 'data-boim-editor-poster', '' );
-	expect(
-		await element.evaluate(
-			( node ) => window.getComputedStyle( node ).backgroundImage
-		)
-	).toMatch( /poster/ );
+	// No loop or poster options any more.
+	await expect( page.getByRole( 'checkbox', { name: 'Loop' } ) ).toHaveCount(
+		0
+	);
+	await expect( page.getByRole( 'button', { name: /poster/i } ) ).toHaveCount(
+		0
+	);
+
+	await page.getByRole( 'checkbox', { name: 'Disable on mobile' } ).check();
 
 	// Remove clears every video setting, nothing else.
 	await page
@@ -212,55 +214,9 @@ test( 'the Video background panel writes htmlAttributes', async ( {
 		.click();
 	const removed = await html();
 	expect(
-		Object.keys( removed ).filter(
-			( key ) =>
-				key.startsWith( 'data-boim-video' ) &&
-				'data-boim-video-part' !== key
+		Object.keys( removed ).filter( ( key ) =>
+			key.startsWith( 'data-boim-video' )
 		)
 	).toEqual( [] );
 	expect( removed ).toHaveProperty( 'id', 'banner-a' );
-} );
-
-test( 'the part panel appears only inside a banner', async ( { page } ) => {
-	await openEditor( page, await demoId( page ) );
-
-	// The toggle inside banner A.
-	await page.evaluate( () => {
-		const { select, dispatch } = window.wp.data;
-		const banner = select( 'core/block-editor' )
-			.getBlocks()
-			.find(
-				( block ) => 'banner-a' === block.attributes.htmlAttributes?.id
-			);
-		const toggle = banner.innerBlocks.find(
-			( block ) =>
-				block.attributes.htmlAttributes?.[ 'data-boim-video-part' ]
-		);
-
-		dispatch( 'core/block-editor' ).selectBlock( toggle.clientId );
-		dispatch( 'core/edit-post' ).openGeneralSidebar( 'edit-post/block' );
-	} );
-
-	await expect(
-		page.getByRole( 'button', { name: 'Video banner part' } )
-	).toBeVisible();
-	await expect(
-		page.getByRole( 'combobox', { name: 'This block is the…' } )
-	).toHaveValue( 'toggle' );
-
-	// The spacer's text, outside any banner.
-	await page.evaluate( () => {
-		const { select, dispatch } = window.wp.data;
-		const spacer = select( 'core/block-editor' )
-			.getBlocks()
-			.find( ( block ) => 'sp000001' === block.attributes.uniqueId );
-
-		dispatch( 'core/block-editor' ).selectBlock(
-			spacer.innerBlocks[ 0 ].clientId
-		);
-	} );
-
-	await expect(
-		page.getByRole( 'button', { name: 'Video banner part' } )
-	).toHaveCount( 0 );
 } );

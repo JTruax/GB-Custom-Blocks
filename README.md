@@ -1,18 +1,18 @@
 # BOIM Blocks: Video Banner for GenerateBlocks
 
-A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container** that plays a video file as its background. You can switch the video off on mobile and tablet. Everything you see is a GenerateBlocks block, styled in GB's own Styles panel and Global Styles. The plugin only adds the video and the pause button's behaviour.
+A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container** that plays a video file as its background, muted and looping. You can switch the video off below a screen width you choose. Everything you see is a GenerateBlocks block, styled in GB's own Styles panel and Global Styles. The plugin only adds the video.
 
 ## Using it
 
-1. **Inserter → Video Banner** (in the GenerateBlocks category). It inserts a Container (`<section>`) with a content area, a heading, a paragraph and a **Pause video** button.
+1. **Inserter → Video Banner** (in the GenerateBlocks category). It inserts a Container (`<section>`) with a content area, a heading and a paragraph.
 2. In the block sidebar, open **Video background**:
    - **Choose video**: pick from the Media Library or upload (MP4, WebM or Ogg), or *Insert from URL* (an `http(s)` link ending in `.mp4`, `.m4v`, `.webm` or `.ogv`).
-   - **Poster image** (optional): shown before the video plays, where the video is switched off, and to visitors who prefer reduced motion. It also previews the banner in the editor.
-   - **Disable on mobile** (up to 767px) and **Disable on tablet** (768–1024px). On those screens the video file is **never downloaded**, and the poster (or the banner's own background) shows instead.
-   - **Loop** (on by default).
-3. Style the banner, its content and the button in GenerateBlocks as usual.
+   - **Disable on mobile** (off by default). Turning it on shows a **Breakpoint (px)** field, pre-filled with **767** (GenerateBlocks' mobile breakpoint). The video is switched off at that width and below, and the file is **never downloaded** there.
+3. Style the banner and its content in GenerateBlocks as usual. Give the Container a background colour or image: it shows until the video plays, and wherever the video is switched off.
 
 Any existing Container can become a video banner too: select it and choose a video in the **Video background** panel.
+
+The video always plays muted and loops. There's no pause button and no poster image.
 
 ### Styling tips
 
@@ -20,16 +20,8 @@ Any existing Container can become a video banner too: select it and choose a vid
 |---|---|
 | A tint over the video, for readable text | Keep the `boim-video-banner--overlay` class. Or, in the Container's Styles, add the nested selector `&::after` with `content: ""`, `position: absolute`, top/right/bottom/left `0`, `z-index: -1` and a background colour. |
 | A different focal point | In the Container's Styles, add the nested selector `& .boim-video-banner__media > *` and set `object-position` (e.g. `center top`). |
-| A different look while paused | On the button, use the nested selector `&[aria-pressed="true"]`. |
+| An image where the video is off | Set a background image on the Container in GB's Styles (optionally only in GB's mobile breakpoint). |
 | A full-width banner in GeneratePress | Set the page's *Content Container* to *Full Width* (Layout meta box), or put the banner in a GP Element. |
-
-### The pause button ("Video banner part")
-
-Moving content that lasts more than 5 seconds needs a way to pause it (WCAG 2.2.2). The starting layout includes one. Any GenerateBlocks block inside a banner can be made the pause button: select it, open **Video banner part**, and choose **Pause toggle**. A Text block set to `<button>` is best. If the banner has no pause button, the **Video background** panel shows a warning.
-
-- The button keeps the same text in both states. While paused it has `aria-pressed="true"` and `data-boim-state="paused"`.
-- If the video can't play (switched off on this screen, or the file fails to load), the button is hidden.
-- An icon-only button needs an `aria-label` (add it under GenerateBlocks' HTML Attributes).
 
 ## How it works
 
@@ -38,24 +30,21 @@ Moving content that lasts more than 5 seconds needs a way to pause it (WCAG 2.2.
   | Attribute | Value |
   |---|---|
   | `data-boim-video` | Media Library ID or URL. Also marks the Container as a banner (`""` = no file yet). |
-  | `data-boim-video-poster` | Image ID |
-  | `data-boim-video-hide` | `mobile`, `tablet` or `mobile tablet` |
-  | `data-boim-video-loop` | `false` when looping is off |
-  | `data-boim-video-part` | `toggle`, on the pause button |
+  | `data-boim-video-max-width` | Only present when "Disable on mobile" is on. The breakpoint in px (whole number, 1–4000; empty or invalid means 767). |
 
   If the plugin is switched off, the content is still a valid GenerateBlocks Container.
-- **On the server** (`render_block_generateblocks/element`), the settings are validated: Media Library files must be videos, URLs must be `http(s)` and end in a video extension. They're then replaced by a checked `data-boim-video-banner` config, plus a decorative layer (`aria-hidden`) holding the poster `<img>` (responsive `srcset`) and an **empty** `<video>`. The pause button gets `type="button"` and `aria-pressed`.
+- **On the server** (`render_block_generateblocks/element`), the settings are validated: Media Library files must be videos, URLs must be `http(s)` and end in a video extension. They're then replaced by a checked `data-boim-video-banner` config, plus a decorative layer (`aria-hidden`) holding an **empty**, muted, looping `<video>`.
 - **In the browser**, the view script (~2 KB gzipped, no dependencies) adds the `<source>` only when the video is allowed:
-  - not on a switched-off screen size;
+  - not at or below the breakpoint;
   - only near the viewport;
-  - not automatically with `prefers-reduced-motion: reduce` or Save-Data (the visitor can still press play).
+  - never with `prefers-reduced-motion: reduce` or Save-Data.
 
-  It pauses the video off-screen, in background tabs, and when the window is resized into a switched-off range. The video fades in over the poster once it actually plays.
-- Pages without a banner load **nothing** from this plugin. On GeneratePress (a classic theme), the small stylesheet is loaded in `<head>` for posts that contain a banner, so nothing flashes.
+  It pauses the video off-screen and in background tabs. Resizing to the breakpoint or below pauses the video and hides it, and it comes back when the window is wider again. The video fades in over the Container's background once it actually plays.
+- Pages without a banner load **nothing** from this plugin. On GeneratePress (a classic theme), the small stylesheet is loaded in `<head>` for posts that contain a banner.
 
 ### Classes
 
-Added by PHP (structure only; don't use these names for Global Styles): `boim-has-video`, `boim-video-hide-mobile`, `boim-video-hide-tablet`, `boim-video-banner__media`, `boim-video-banner__poster`, `boim-video-banner__video`.
+Added by PHP (structure only; don't use these names for Global Styles): `boim-has-video`, `boim-video-banner__media`, `boim-video-banner__video`.
 
 Default Global Styles, created once with **GenerateBlocks Pro** and never overwritten afterwards:
 
@@ -64,16 +53,21 @@ Default Global Styles, created once with **GenerateBlocks Pro** and never overwr
 | `boim-video-banner` | Min height, padding, centred content, white text on a dark fallback background |
 | `boim-video-banner--overlay` | A 55% black tint between the video and the content |
 | `boim-video-banner__content` | Max width 1200px, centred |
-| `boim-video-banner__toggle` | Bottom-corner pill (white on 75% black), CSS-drawn pause/play icon, visible focus ring |
 
 Without GB Pro the banner still works; it's just unstyled until you style it.
 
+## Accessibility note
+
+A video that moves for more than 5 seconds with no way to pause it doesn't meet WCAG 2.2.2 (Pause, Stop, Hide, level A). This plugin doesn't include a pause button, by design. To limit the impact:
+
+- visitors who set "reduce motion" on their device never get the video;
+- the video layer is hidden from screen readers and has no sound.
+
+If a site needs WCAG 2.2 A/AA conformance, add your own pause control or keep banner videos under 5 seconds without looping.
+
 ## Known limitations
 
-- The mobile/tablet breakpoints are GenerateBlocks' defaults (767px / 1024px).
-- The editor shows the poster, not the moving video.
-- A banner nested inside a banner that's switched off on a device also hides the inner banner's pause button on that device.
-- GB icons inside the pause button are removed when an Author or Contributor saves (WordPress strips inline SVG for them; a GenerateBlocks limitation). The CSS-drawn icon in the default style isn't affected.
+- The editor doesn't show the video itself, only the Container's own background.
 - URL sources can point at any host, like an image URL in a post.
 
 ## Development
@@ -96,14 +90,14 @@ The Playground command starts a local WordPress at http://127.0.0.1:9400 with Ge
 npm run test:e2e
 ```
 
-That runs 27 Playwright tests:
+That runs 24 Playwright tests:
 
 - **Assets:** nothing loads without a banner.
-- **Server markup:** checked before JS runs.
-- **Behaviour:** play/pause, mobile, tablet, resize, off-screen, nested banners, URL source, no-loop.
-- **Reduced motion, keyboard** and an **axe scan** (light and dark).
+- **Server markup:** checked before JS runs, including breakpoint parsing.
+- **Behaviour:** plays and loops; the breakpoint (default, custom, exact edge, resize); off-screen; nested banners; URL source.
+- **Reduced motion** and an **axe scan** (light and dark).
 - **Forged configs.**
-- **Editor:** valid blocks, the variation, and both panels.
+- **Editor:** valid blocks, the variation, and the panel.
 
 Locally the tests use your installed Chrome so MP4 plays. `node scripts/make-fixtures.js` regenerates the test videos.
 

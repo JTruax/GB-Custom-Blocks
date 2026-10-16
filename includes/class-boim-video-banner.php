@@ -6,8 +6,9 @@
  * saves and renders them). Here, on the server, they are validated and turned
  * into a decorative video layer, so the markup is right before any JavaScript
  * runs. The video's <source> is never in the HTML: the view script adds it only
- * when the video is allowed (not on a disabled device, not with reduced motion,
- * only near the viewport), so a phone with "Disable on mobile" never downloads it.
+ * when the video is allowed (not at or below the "Disable on mobile" width, not
+ * with reduced motion, only near the viewport), so a phone below the breakpoint
+ * never downloads it. The video always loops, muted.
  *
  * @package Boim
  */
@@ -21,15 +22,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Boim_Video_Banner {
 
-	const KEY    = 'data-boim-video';          // Source: an attachment ID or a URL. Also marks a Container as a banner.
-	const POSTER = 'data-boim-video-poster';   // Image attachment ID.
-	const HIDE   = 'data-boim-video-hide';     // Devices: mobile, tablet, or both (space-separated).
-	const LOOP   = 'data-boim-video-loop';     // "false" when looping is off.
-	const PART   = 'data-boim-video-part';     // "toggle" on the pause button.
-	const CONFIG = 'data-boim-video-banner';   // What the view script reads (sanitised JSON).
-	const OWNED  = 'data-boim-owned';          // A toggle a banner has claimed, so an outer banner skips a nested one's.
+	const KEY        = 'data-boim-video';           // Source: an attachment ID or a URL. Also marks a Container as a banner.
+	const BREAKPOINT = 'data-boim-video-max-width'; // "Disable on mobile": off at this width (px) and below.
+	const CONFIG     = 'data-boim-video-banner';    // What the view script reads (sanitised JSON).
 
-	const DEVICES = array( 'mobile', 'tablet' );
+	const DEFAULT_BREAKPOINT = 767; // GenerateBlocks' mobile breakpoint.
+	const MAX_BREAKPOINT     = 4000;
 
 	// Video types every current browser can play, by file extension.
 	const TYPES = array(
@@ -48,7 +46,7 @@ class Boim_Video_Banner {
 
 	/**
 	 * Whether a post's content has a Video Banner: the setting as it appears
-	 * in the block comment's JSON (a toggle alone doesn't count).
+	 * in the block comment's JSON.
 	 *
 	 * @param WP_Post|null $post Post.
 	 * @return bool
@@ -89,27 +87,17 @@ class Boim_Video_Banner {
 		$tag = strtolower( $processor->get_tag() );
 
 		// The raw settings never reach the page; the script gets the checked config instead.
-		foreach ( array( self::KEY, self::POSTER, self::HIDE, self::LOOP ) as $attribute ) {
-			$processor->remove_attribute( $attribute );
-		}
-
-		if ( $config['sources'] ) {
-			$processor->add_class( 'boim-has-video' );
-
-			foreach ( $config['hide'] as $device ) {
-				$processor->add_class( 'boim-video-hide-' . $device );
-			}
-
-			$processor->set_attribute( self::CONFIG, wp_json_encode( array_diff_key( $config, array( 'poster' => true ) ) ) );
-		}
-
-		self::decorate_toggles( $processor, (bool) $config['sources'] );
-
-		$html = $processor->get_updated_html();
+		$processor->remove_attribute( self::KEY );
+		$processor->remove_attribute( self::BREAKPOINT );
 
 		if ( ! $config['sources'] ) {
-			return $html; // No usable file (yet): a plain Container.
+			return $processor->get_updated_html(); // No usable file (yet): a plain Container.
 		}
+
+		$processor->add_class( 'boim-has-video' );
+		$processor->set_attribute( self::CONFIG, wp_json_encode( $config ) );
+
+		$html = $processor->get_updated_html();
 
 		// The layer goes just before the Container's own closing tag. Its
 		// position in the DOM doesn't matter for painting (it's absolutely
@@ -118,7 +106,7 @@ class Boim_Video_Banner {
 			return $html;
 		}
 
-		$html = substr_replace( $html, self::media_layer( $config['poster'] ), $match[0][1], 0 );
+		$html = substr_replace( $html, self::media_layer(), $match[0][1], 0 );
 
 		self::enqueue();
 
@@ -129,19 +117,28 @@ class Boim_Video_Banner {
 	 * Every setting, whitelisted. The view script only ever sees this.
 	 *
 	 * @param array $saved The Container's htmlAttributes.
-	 * @return array{sources: array, poster: int, hide: string[], loop: bool}
+	 * @return array{sources: array, maxWidth: int}
 	 */
 	public static function config( $saved ) {
 		$source = self::source( $saved[ self::KEY ] ?? '' );
-		$poster = absint( $saved[ self::POSTER ] ?? 0 );
-		$hide   = is_string( $saved[ self::HIDE ] ?? null ) ? preg_split( '/\s+/', $saved[ self::HIDE ] ) : array();
 
 		return array(
-			'sources' => $source ? array( $source ) : array(),
-			'poster'  => $poster && wp_attachment_is_image( $poster ) ? $poster : 0,
-			'hide'    => array_values( array_intersect( self::DEVICES, $hide ) ),
-			'loop'    => 'false' !== ( $saved[ self::LOOP ] ?? '' ),
+			'sources'  => $source ? array( $source ) : array(),
+			'maxWidth' => array_key_exists( self::BREAKPOINT, $saved ) ? self::breakpoint( $saved[ self::BREAKPOINT ] ) : 0,
 		);
+	}
+
+	/**
+	 * The "Disable on mobile" width in px: a whole number, clamped. Empty or
+	 * invalid falls back to the default, since the setting is switched on.
+	 *
+	 * @param mixed $value Saved value.
+	 * @return int
+	 */
+	public static function breakpoint( $value ) {
+		$width = is_scalar( $value ) && preg_match( '/^\d+$/', trim( (string) $value ) ) ? (int) $value : 0;
+
+		return $width > 0 ? min( $width, self::MAX_BREAKPOINT ) : self::DEFAULT_BREAKPOINT;
 	}
 
 	/**
@@ -182,64 +179,13 @@ class Boim_Video_Banner {
 	}
 
 	/**
-	 * The pause toggle part(s): a toggle button (WAI-ARIA APG "button" with
-	 * aria-pressed). aria-pressed="true" means the video is paused. Added
-	 * here rather than saved, because kses strips aria-pressed from posts
-	 * saved by Authors and Contributors.
+	 * The decorative layer behind the content: an empty, muted video.
 	 *
-	 * @param WP_HTML_Tag_Processor $processor Positioned on the Container's tag.
-	 * @param bool                  $has_video Whether there is a video to pause.
-	 */
-	private static function decorate_toggles( $processor, $has_video ) {
-		while ( $processor->next_tag() ) {
-			if ( 'toggle' !== $processor->get_attribute( self::PART ) || null !== $processor->get_attribute( self::OWNED ) ) {
-				continue;
-			}
-
-			$processor->set_attribute( self::OWNED, true );
-
-			if ( 'BUTTON' === $processor->get_tag() ) {
-				$processor->set_attribute( 'type', 'button' ); // Never submits a surrounding form.
-			} else {
-				$processor->set_attribute( 'role', 'button' );
-				$processor->set_attribute( 'tabindex', '0' );
-			}
-
-			$processor->set_attribute( 'aria-pressed', 'false' );
-			$processor->set_attribute( 'data-boim-state', 'playing' );
-
-			if ( ! $has_video ) {
-				$processor->set_attribute( 'hidden', true ); // Nothing to pause.
-			}
-		}
-	}
-
-	/**
-	 * The decorative layer behind the content: poster image and an empty video.
-	 *
-	 * @param int $poster Image attachment ID, or 0.
 	 * @return string
 	 */
-	private static function media_layer( $poster ) {
-		$image = '';
-
-		if ( $poster ) {
-			$image = wp_get_attachment_image(
-				$poster,
-				'full',
-				false,
-				array(
-					'class'    => 'boim-video-banner__poster',
-					'alt'      => '', // Decorative: the layer is aria-hidden.
-					'sizes'    => '100vw',
-					'decoding' => 'async',
-				)
-			);
-		}
-
+	private static function media_layer() {
 		return '<div class="boim-video-banner__media" aria-hidden="true">'
-			. $image
-			. '<video class="boim-video-banner__video" muted playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"></video>'
+			. '<video class="boim-video-banner__video" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"></video>'
 			. '</div>';
 	}
 
