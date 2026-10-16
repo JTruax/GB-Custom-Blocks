@@ -357,10 +357,6 @@ function VideoPanel( { attributes, setAttributes } ) {
 							max={ 4000 }
 							step={ 1 }
 							label={ __( 'Breakpoint (px)', 'boim-blocks' ) }
-							help={ __(
-								'The video is switched off at this screen width and below, and never downloaded there. 767px is GenerateBlocks’ mobile breakpoint.',
-								'boim-blocks'
-							) }
 							value={ html[ BREAKPOINT ] ?? '' }
 							onChange={ ( value ) =>
 								update( {
