@@ -84,12 +84,23 @@ function boim_editor_assets() {
 
 	wp_enqueue_script( 'boim-video-banner-editor' );
 	wp_set_script_translations( 'boim-video-banner-editor', 'boim-blocks' );
-	wp_enqueue_style( 'boim-video-banner-editor' ); // The sidebar panel, not the canvas.
+	wp_enqueue_style( 'boim-video-banner-editor' ); // The sidebar panel.
 
 	$container = wp_scripts()->query( generate_block_asset_handle( 'generateblocks/element', 'editorScript' ), 'registered' );
 
 	if ( $container && ! in_array( 'boim-video-banner-editor', $container->deps, true ) ) {
 		$container->deps[] = 'boim-video-banner-editor';
+	}
+}
+
+add_action( 'enqueue_block_assets', 'boim_editor_canvas_styles' );
+/**
+ * The editor canvas is an iframe, and enqueue_block_assets is what reaches
+ * it: the video plays behind banners there too.
+ */
+function boim_editor_canvas_styles() {
+	if ( is_admin() && wp_style_is( 'boim-video-banner-editor', 'registered' ) ) {
+		wp_enqueue_style( 'boim-video-banner-editor' );
 	}
 }
 

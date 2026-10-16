@@ -46,19 +46,19 @@ return static function () {
 				),
 			)
 		),
-		// A tint between the video and the content (z-index -1, after the
-		// video layer in the DOM, so it paints above it), for text contrast.
+		// A tint over the video, under the content: on the video layer's own
+		// ::after (later than the video, so it paints above it). Not the
+		// Container's ::after, which the block editor uses for its selection
+		// outline. No video (or switched off): the layer and tint go with it.
 		'boim-video-banner--overlay' => array(
-			'&::after' => array(
+			'& .boim-video-banner__media::after' => array(
 				'content'         => '""',
 				'position'        => 'absolute',
 				'top'             => '0',
 				'right'           => '0',
 				'bottom'          => '0',
 				'left'            => '0',
-				'zIndex'          => '-1',
 				'backgroundColor' => 'rgba(0, 0, 0, 0.55)',
-				'pointerEvents'   => 'none',
 			),
 		),
 		'boim-video-banner__content' => array(

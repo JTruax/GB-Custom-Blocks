@@ -5,12 +5,17 @@
  * a "Video background" panel. Every setting is saved in the Container's own
  * htmlAttributes, which GenerateBlocks saves and renders, so the content
  * stays a valid Container if this plugin is ever switched off. PHP turns the
- * settings into the video layer (includes/class-boim-video-banner.php).
+ * settings into the video layer (includes/class-boim-video-banner.php); in
+ * the editor, canvas-video.js plays the same video behind the content.
  */
 import { __, sprintf } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { InspectorControls, MediaReplaceFlow } from '@wordpress/block-editor';
+import {
+	InspectorControls,
+	MediaUpload,
+	MediaUploadCheck,
+} from '@wordpress/block-editor';
 import { getBlockType, registerBlockVariation } from '@wordpress/blocks';
 import {
 	Button,
@@ -19,57 +24,29 @@ import {
 	PanelBody,
 	TextControl,
 	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- Only exported as experimental in WP 6.6–6.9; core and GenerateBlocks use it throughout.
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- As above.
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
-import { store as coreStore } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
 import { useState } from '@wordpress/element';
 
+import CanvasVideo from './canvas-video';
 import { videoBannerIcon } from './icon';
+import {
+	BREAKPOINT,
+	CONTAINER,
+	DEFAULT_BREAKPOINT,
+	htmlAttributesOf,
+	isBanner,
+	isVideoUrl,
+	KEY,
+	sourceIdOf,
+	useVideo,
+} from './shared';
 import './editor.scss';
 
-const CONTAINER = 'generateblocks/element';
-
-const KEY = 'data-boim-video';
-const BREAKPOINT = 'data-boim-video-max-width';
-const DEFAULT_BREAKPOINT = '767'; // GenerateBlocks' mobile breakpoint.
-
 const OVERLAY_CLASS = 'boim-video-banner--overlay';
-const VIDEO_TYPES = /\.(mp4|m4v|webm|ogv)$/i;
-
-/**
- * A plain object of htmlAttributes (an empty one can arrive as an array).
- *
- * @param {Object} attributes Block attributes.
- * @return {Object} htmlAttributes.
- */
-const htmlAttributesOf = ( attributes ) => {
-	const value = attributes?.htmlAttributes;
-
-	return value && 'object' === typeof value && ! Array.isArray( value )
-		? value
-		: {};
-};
-
-const isBanner = ( attributes ) =>
-	Object.hasOwn( htmlAttributesOf( attributes ), KEY );
-
-/**
- * An http(s) URL to a video file, like the server accepts.
- *
- * @param {string} value URL.
- * @return {boolean} Valid.
- */
-const isVideoUrl = ( value ) => {
-	try {
-		const url = new URL( value );
-
-		return (
-			/^https?:$/.test( url.protocol ) && VIDEO_TYPES.test( url.pathname )
-		);
-	} catch ( e ) {
-		return false;
-	}
-};
 
 /*
  * The "Video Banner" entry in the inserter: a Container with the video
@@ -159,6 +136,136 @@ if ( getBlockType( CONTAINER ) ) {
 }
 
 /**
+ * Where the video comes from: the Media Library (upload or choose), or a URL.
+ *
+ * @param {Object}   props          Props.
+ * @param {*}        props.source   Saved data-boim-video value.
+ * @param {Function} props.onChange Called with the new value to save.
+ */
+function VideoSource( { source, onChange } ) {
+	const sourceId = sourceIdOf( source );
+	const savedUrl = ! sourceId && source ? String( source ) : '';
+	const [ mode, setMode ] = useState( savedUrl ? 'url' : 'upload' );
+	const [ url, setUrl ] = useState( savedUrl );
+	// Checked once the field is left, not on every keystroke while typing.
+	const [ checked, setChecked ] = useState( false );
+	const { media } = useVideo( source );
+	const urlError = checked && '' !== url.trim() && ! isVideoUrl( url.trim() );
+
+	let fileName = __( 'No video chosen yet.', 'boim-blocks' );
+
+	if ( sourceId ) {
+		fileName = media?.source_url
+			? media.source_url.split( '/' ).pop()
+			: __( 'Loading…', 'boim-blocks' );
+	}
+
+	return (
+		<>
+			<ToggleGroupControl
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+				isBlock
+				label={ __( 'Video source', 'boim-blocks' ) }
+				value={ mode }
+				onChange={ ( next ) => setMode( next ) }
+			>
+				<ToggleGroupControlOption
+					value="upload"
+					label={ __( 'Upload', 'boim-blocks' ) }
+				/>
+				<ToggleGroupControlOption
+					value="url"
+					label={ __( 'Video URL', 'boim-blocks' ) }
+				/>
+			</ToggleGroupControl>
+
+			<div className="boim-video-panel__source">
+				{ 'upload' === mode ? (
+					<>
+						<p className="boim-video-panel__file">
+							{ sourceId
+								? fileName
+								: __(
+										'Upload a video or choose one from the Media Library (MP4, WebM or Ogg).',
+										'boim-blocks'
+								  ) }
+						</p>
+						<MediaUploadCheck
+							fallback={
+								<p className="components-base-control__help">
+									{ __(
+										'You don’t have permission to upload. Use a video URL instead.',
+										'boim-blocks'
+									) }
+								</p>
+							}
+						>
+							<MediaUpload
+								allowedTypes={ [ 'video' ] }
+								value={ sourceId || undefined }
+								onSelect={ ( selected ) => {
+									setUrl( '' );
+									onChange( String( selected.id ) );
+								} }
+								render={ ( { open } ) => (
+									<Button
+										variant="secondary"
+										onClick={ open }
+										__next40pxDefaultSize
+									>
+										{ sourceId
+											? __(
+													'Replace video',
+													'boim-blocks'
+											  )
+											: __(
+													'Upload or choose video',
+													'boim-blocks'
+											  ) }
+									</Button>
+								) }
+							/>
+						</MediaUploadCheck>
+					</>
+				) : (
+					<TextControl
+						__next40pxDefaultSize
+						__nextHasNoMarginBottom
+						type="url"
+						label={ __( 'Video URL', 'boim-blocks' ) }
+						placeholder="https://"
+						value={ url }
+						help={ __(
+							'A direct link to the file, ending in .mp4, .m4v, .webm or .ogv (not a YouTube or Vimeo page).',
+							'boim-blocks'
+						) }
+						onBlur={ () => setChecked( true ) }
+						onChange={ ( next ) => {
+							setUrl( next );
+							setChecked( false );
+
+							if ( isVideoUrl( next.trim() ) ) {
+								onChange( next.trim() );
+							}
+						} }
+					/>
+				) }
+
+				{ 'url' === mode && urlError && (
+					<Notice status="error" isDismissible={ false }>
+						{ __(
+							'That isn’t a link to a video file yet. The banner keeps its current video until it is.',
+							'boim-blocks'
+						) }
+					</Notice>
+				) }
+			</div>
+		</>
+	);
+}
+
+/**
  * The "Video background" panel.
  *
  * @param {Object}   props               Block edit props.
@@ -167,21 +274,8 @@ if ( getBlockType( CONTAINER ) ) {
  */
 function VideoPanel( { attributes, setAttributes } ) {
 	const html = htmlAttributesOf( attributes );
-	const source = html[ KEY ];
 	const banner = Object.hasOwn( html, KEY );
-	const sourceId = /^\d+$/.test( String( source ?? '' ) )
-		? Number( source )
-		: 0;
 	const mobileOff = Object.hasOwn( html, BREAKPOINT );
-	const [ urlError, setUrlError ] = useState( false );
-
-	const video = useSelect(
-		( select ) =>
-			sourceId
-				? select( coreStore ).getMedia( sourceId, { context: 'view' } )
-				: null,
-		[ sourceId ]
-	);
 
 	// Only the keys given change; undefined removes a key. Always a copy.
 	const update = ( changes ) => {
@@ -198,75 +292,15 @@ function VideoPanel( { attributes, setAttributes } ) {
 		setAttributes( { htmlAttributes: next } );
 	};
 
-	const removeAll = () =>
-		update( { [ KEY ]: undefined, [ BREAKPOINT ]: undefined } );
-
-	let sourceLabel = __( 'No video chosen yet.', 'boim-blocks' );
-
-	if ( sourceId ) {
-		sourceLabel = video?.source_url
-			? video.source_url.split( '/' ).pop()
-			: __( 'Loading…', 'boim-blocks' );
-	} else if ( source ) {
-		sourceLabel = source;
-	}
-
 	return (
 		<PanelBody
 			title={ __( 'Video background', 'boim-blocks' ) }
 			initialOpen={ banner }
 		>
-			<p className="boim-video-panel__file">
-				<strong>{ __( 'Video:', 'boim-blocks' ) }</strong>{ ' ' }
-				{ sourceLabel }
-			</p>
-
-			<div className="boim-video-panel__actions">
-				<MediaReplaceFlow
-					name={
-						source
-							? __( 'Replace video', 'boim-blocks' )
-							: __( 'Choose video', 'boim-blocks' )
-					}
-					mediaId={ sourceId || undefined }
-					mediaURL={
-						sourceId ? video?.source_url : source || undefined
-					}
-					allowedTypes={ [ 'video' ] }
-					accept="video/mp4,video/webm,video/ogg"
-					onSelect={ ( media ) => {
-						setUrlError( false );
-						update( { [ KEY ]: String( media.id ) } );
-					} }
-					onSelectURL={ ( url ) => {
-						const valid = isVideoUrl( url );
-
-						setUrlError( ! valid );
-
-						if ( valid ) {
-							update( { [ KEY ]: url } );
-						}
-					} }
-				/>
-				{ banner && (
-					<Button
-						variant="tertiary"
-						isDestructive
-						onClick={ removeAll }
-					>
-						{ __( 'Remove video background', 'boim-blocks' ) }
-					</Button>
-				) }
-			</div>
-
-			{ urlError && (
-				<Notice status="error" isDismissible={ false }>
-					{ __(
-						'That URL isn’t a video file. Use an http(s) link ending in .mp4, .m4v, .webm or .ogv.',
-						'boim-blocks'
-					) }
-				</Notice>
-			) }
+			<VideoSource
+				source={ html[ KEY ] }
+				onChange={ ( value ) => update( { [ KEY ]: value } ) }
+			/>
 
 			{ banner && (
 				<>
@@ -321,7 +355,7 @@ function VideoPanel( { attributes, setAttributes } ) {
 							{ sprintf(
 								/* translators: %s: a CSS class name. */
 								__(
-									'Text over moving video is hard to read. Add the %s class, or a tint with the nested selector &::after in this block’s Styles (position: absolute, inset 0, z-index: -1).',
+									'Text over moving video is hard to read. Add the %s class, or a tint in this block’s Styles with the nested selector “& .boim-video-banner__media::after” (content: "", position: absolute, inset 0, a background colour).',
 									'boim-blocks'
 								),
 								OVERLAY_CLASS
@@ -338,29 +372,56 @@ function VideoPanel( { attributes, setAttributes } ) {
 							{ __( 'About object-position', 'boim-blocks' ) }
 						</ExternalLink>
 					</p>
+
+					<Button
+						variant="tertiary"
+						isDestructive
+						onClick={ () =>
+							update( {
+								[ KEY ]: undefined,
+								[ BREAKPOINT ]: undefined,
+							} )
+						}
+					>
+						{ __( 'Remove video background', 'boim-blocks' ) }
+					</Button>
 				</>
 			) }
 		</PanelBody>
 	);
 }
 
-const withVideoPanel = createHigherOrderComponent(
+const withVideoBanner = createHigherOrderComponent(
 	( BlockEdit ) => ( props ) => {
-		// Runs for every block in the post: only selected Containers get the panel.
-		if ( CONTAINER !== props.name || ! props.isSelected ) {
+		// Runs for every block in the post: return early for anything else.
+		if ( CONTAINER !== props.name ) {
+			return <BlockEdit { ...props } />;
+		}
+
+		const banner = isBanner( props.attributes );
+
+		if ( ! banner && ! props.isSelected ) {
 			return <BlockEdit { ...props } />;
 		}
 
 		return (
 			<>
 				<BlockEdit { ...props } />
-				<InspectorControls>
-					<VideoPanel { ...props } />
-				</InspectorControls>
+				{ banner && (
+					<CanvasVideo
+						clientId={ props.clientId }
+						attributes={ props.attributes }
+					/>
+				) }
+				{ props.isSelected && (
+					<InspectorControls>
+						<VideoPanel { ...props } />
+					</InspectorControls>
+				) }
 			</>
 		);
 	},
-	'withVideoPanel'
+	'withVideoBanner'
 );
 
-addFilter( 'editor.BlockEdit', 'boim/video-banner-panel', withVideoPanel );
+addFilter( 'editor.BlockEdit', 'boim/video-banner', withVideoBanner );

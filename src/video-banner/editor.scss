@@ -1,12 +1,19 @@
-// Editor sidebar: the Video background panel.
-.boim-video-panel__file {
-	margin: 0 0 12px;
-	overflow-wrap: anywhere;
+// Editor: the Video background panel (sidebar) and the video playing behind
+// a banner in the canvas (canvas-video.js). Loaded in both documents.
+@use "layer";
+
+// In the canvas the Container keeps its saved data-boim-video attribute.
+:where([data-boim-video]) {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
 }
 
-.boim-video-panel__actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin-bottom: 16px;
+.boim-video-panel__source {
+	margin: 8px 0 16px;
+}
+
+.boim-video-panel__file {
+	margin: 0 0 8px;
+	overflow-wrap: anywhere;
 }

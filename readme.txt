@@ -15,7 +15,8 @@ A Video Banner for GenerateBlocks: any GenerateBlocks Container can play a loopi
 
 Insert **Video Banner** from the GenerateBlocks category, or pick a video in the **Video background** panel of any GenerateBlocks Container.
 
-* Video from the Media Library (MP4, WebM, Ogg) or an http(s) URL.
+* Two video sources: **Upload** (Media Library: MP4, WebM, Ogg) or **Video URL**.
+* The video plays in the block editor too, behind the content.
 * Plays muted and loops.
 * **Disable on mobile** with a custom breakpoint (767px by default): the video file is never downloaded at that width and below. The Container's own background shows instead.
 * Never plays for visitors who prefer reduced motion or save data.
@@ -31,7 +32,7 @@ If the plugin is deactivated, your banners remain valid GenerateBlocks Container
 
 = How do I darken the video so text is readable? =
 
-Keep the `boim-video-banner--overlay` class, or add a nested `&::after` style to the Container (`content: ""`, `position: absolute`, inset 0, `z-index: -1`, a background colour).
+Keep the `boim-video-banner--overlay` class, or add the nested selector `& .boim-video-banner__media::after` to the Container's Styles (`content: ""`, `position: absolute`, inset 0, a background colour).
 
 = How do I change the video's focal point? =
 

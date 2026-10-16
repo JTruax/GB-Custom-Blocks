@@ -51,6 +51,17 @@ test.describe( 'Desktop', () => {
 
 		const state = await videoState( page, 'banner-a' );
 		expect( state.loop ).toBe( true );
+
+		// The overlay tint sits on the video layer.
+		expect(
+			await page
+				.locator( '#banner-a > .boim-video-banner__media' )
+				.evaluate(
+					( node ) =>
+						window.getComputedStyle( node, '::after' )
+							.backgroundColor
+				)
+		).toBe( 'rgba(0, 0, 0, 0.55)' );
 		expect(
 			await page
 				.locator( '#banner-a video' )

@@ -1,0 +1,21 @@
+// The decorative video layer, shared by the front end and the editor canvas.
+// Structure only: everything you see is styled in GenerateBlocks.
+
+.boim-video-banner__media {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.boim-video-banner__video {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	max-width: none;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+}

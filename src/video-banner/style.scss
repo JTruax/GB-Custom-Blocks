@@ -1,5 +1,6 @@
 // Front end only (enqueued with view.js). Structure, never looks: everything
 // you see is a GenerateBlocks block styled in GenerateBlocks.
+@use "layer";
 
 // :where() has no specificity, so a position or overflow set in GB wins.
 // isolation keeps the layer's negative z-index inside the banner: the
@@ -10,26 +11,9 @@
 	overflow: hidden;
 }
 
-.boim-video-banner__media {
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	overflow: hidden;
-	pointer-events: none;
-}
-
+// Shown by the script (inline opacity) once it actually plays, so the
+// banner's own background shows until then, and wherever the video is
+// switched off.
 .boim-video-banner__video {
-	position: absolute;
-	inset: 0;
-	display: block;
-	width: 100%;
-	max-width: none;
-	height: 100%;
-	margin: 0;
-	object-fit: cover;
-
-	// Shown by the script (inline opacity) once it actually plays, so the
-	// banner's own background shows until then, and wherever the video is
-	// switched off.
 	opacity: 0;
 }
