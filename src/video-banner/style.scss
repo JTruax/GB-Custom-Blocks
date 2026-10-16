@@ -1,0 +1,62 @@
+// Front end only (enqueued with view.js). Structure, never looks: everything
+// you see is a GenerateBlocks block styled in GenerateBlocks.
+
+// :where() has no specificity, so a position or overflow set in GB wins.
+// isolation keeps the layer's negative z-index inside the banner: the
+// banner's own background paints first, then the video, then the content.
+:where(.boim-has-video) {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+}
+
+.boim-video-banner__media {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.boim-video-banner__poster,
+.boim-video-banner__video {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	max-width: none;
+	height: 100%;
+	margin: 0;
+	object-fit: cover;
+}
+
+// Shown by the script once it actually plays, so the poster (or the
+// banner's background) shows until then.
+.boim-video-banner__video {
+	opacity: 0;
+}
+
+// The browser hides [hidden] with display:none, but a GB display value on
+// the button would beat that.
+[data-boim-video-part="toggle"][hidden] {
+	display: none !important;
+}
+
+// "Disable on mobile / tablet": hidden by CSS from the first paint, so the
+// pause button never flashes. The script never loads the file there either.
+// GenerateBlocks' default breakpoints.
+@media (max-width: 767px) {
+
+	.boim-video-hide-mobile > .boim-video-banner__media > .boim-video-banner__video,
+	.boim-video-hide-mobile [data-boim-video-part="toggle"] {
+		display: none !important;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+	.boim-video-hide-tablet > .boim-video-banner__media > .boim-video-banner__video,
+	.boim-video-hide-tablet [data-boim-video-part="toggle"] {
+		display: none !important;
+	}
+}

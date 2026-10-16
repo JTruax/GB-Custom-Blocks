@@ -1,0 +1,24 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"landingPage": "/video-banner-demo/",
+	"preferredVersions": { "php": "8.3", "wp": "latest" },
+	"features": { "networking": true },
+	"login": true,
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": { "resource": "wordpress.org/plugins", "slug": "generateblocks" },
+			"options": { "activate": true }
+		},
+		{
+			"step": "installTheme",
+			"themeData": { "resource": "wordpress.org/themes", "slug": "generatepress" },
+			"options": { "activate": true }
+		},
+		{ "step": "activatePlugin", "pluginPath": "boim-blocks/boim-blocks.php" },
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/boim-blocks/playground/setup.php';"
+		}
+	]
+}

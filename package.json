@@ -1,0 +1,24 @@
+{
+	"name": "boim-blocks",
+	"version": "0.1.0",
+	"private": true,
+	"description": "BOIM Blocks: a Video Banner for GenerateBlocks.",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"lint": "npm run lint:js && npm run lint:style",
+		"lint:js": "wp-scripts lint-js src tests scripts",
+		"lint:style": "wp-scripts lint-style \"src/**/*.scss\"",
+		"playground": "cli server --mount=./:/wordpress/wp-content/plugins/boim-blocks --blueprint=playground/blueprint.json --port=9400 --login",
+		"test:e2e": "playwright test",
+		"zip": "node scripts/zip.js"
+	},
+	"devDependencies": {
+		"@axe-core/playwright": "^4.10.0",
+		"@playwright/test": "^1.50.0",
+		"@wordpress/scripts": "^30.0.0",
+		"@wp-playground/cli": "^1.0.0",
+		"typescript": "^5.9.3"
+	}
+}
