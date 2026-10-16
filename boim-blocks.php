@@ -5,7 +5,6 @@
  * Version:           0.1.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
- * Requires Plugins:  generateblocks
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       boim-blocks
@@ -119,8 +118,9 @@ function boim_head_styles() {
 
 add_action( 'admin_notices', 'boim_generateblocks_notice' );
 /**
- * "Requires Plugins" only checks on activation; GenerateBlocks may be
- * deactivated later, or be an old 1.x version.
+ * The plugin doesn't declare GenerateBlocks as a required plugin, so it can be
+ * activated without it (it then does nothing). Say so when GenerateBlocks is
+ * missing, deactivated, or an old 1.x version.
  */
 function boim_generateblocks_notice() {
 	if ( ! current_user_can( 'activate_plugins' ) ) {

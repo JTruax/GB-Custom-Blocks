@@ -364,17 +364,6 @@ function VideoPanel( { attributes, setAttributes } ) {
 						/>
 					) }
 
-					{ ! JSON.stringify( attributes.styles || {} ).includes(
-						'boim-video-banner__media::after'
-					) && (
-						<Notice status="info" isDismissible={ false }>
-							{ __(
-								'Text over moving video is hard to read. Add a tint in this block’s Styles with the nested selector “& .boim-video-banner__media::after” (content: "", position: absolute, inset 0, a background colour).',
-								'boim-blocks'
-							) }
-						</Notice>
-					) }
-
 					<p className="components-base-control__help">
 						{ __(
 							'Focal point: in this block’s Styles, add the nested selector “& .boim-video-banner__media > *” and set object-position.',
