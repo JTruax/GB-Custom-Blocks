@@ -23,6 +23,7 @@ const FORGED = {
 			{ src: 'https://example.invalid/x.webm', type: 'video/webm' },
 		],
 		maxWidth: { valueOf: 767 },
+		opacity: '__proto__',
 	} ),
 	'sources-string': JSON.stringify( {
 		sources: 'https://example.invalid/x.webm',

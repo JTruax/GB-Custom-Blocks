@@ -24,6 +24,7 @@ class Boim_Video_Banner {
 
 	const KEY        = 'data-boim-video';           // Source: an attachment ID or a URL. Also marks a Container as a banner.
 	const BREAKPOINT = 'data-boim-video-max-width'; // "Disable on mobile": off at this width (px) and below.
+	const OPACITY    = 'data-boim-video-opacity';   // Video opacity, 0-100 (%). Absent means 100.
 	const CONFIG     = 'data-boim-video-banner';    // What the view script reads (sanitised JSON).
 
 	const DEFAULT_BREAKPOINT = 767; // GenerateBlocks' mobile breakpoint.
@@ -89,6 +90,7 @@ class Boim_Video_Banner {
 		// The raw settings never reach the page; the script gets the checked config instead.
 		$processor->remove_attribute( self::KEY );
 		$processor->remove_attribute( self::BREAKPOINT );
+		$processor->remove_attribute( self::OPACITY );
 
 		if ( ! $config['sources'] ) {
 			return $processor->get_updated_html(); // No usable file (yet): a plain Container.
@@ -117,7 +119,7 @@ class Boim_Video_Banner {
 	 * Every setting, whitelisted. The view script only ever sees this.
 	 *
 	 * @param array $saved The Container's htmlAttributes.
-	 * @return array{sources: array, maxWidth: int}
+	 * @return array{sources: array, maxWidth: int, opacity: float}
 	 */
 	public static function config( $saved ) {
 		$source = self::source( $saved[ self::KEY ] ?? '' );
@@ -125,6 +127,7 @@ class Boim_Video_Banner {
 		return array(
 			'sources'  => $source ? array( $source ) : array(),
 			'maxWidth' => array_key_exists( self::BREAKPOINT, $saved ) ? self::breakpoint( $saved[ self::BREAKPOINT ] ) : 0,
+			'opacity'  => self::opacity( $saved[ self::OPACITY ] ?? null ),
 		);
 	}
 
@@ -139,6 +142,21 @@ class Boim_Video_Banner {
 		$width = is_scalar( $value ) && preg_match( '/^\d+$/', trim( (string) $value ) ) ? (int) $value : 0;
 
 		return $width > 0 ? min( $width, self::MAX_BREAKPOINT ) : self::DEFAULT_BREAKPOINT;
+	}
+
+	/**
+	 * The video's opacity, from a whole percentage (0-100) to 0-1. Anything
+	 * else (absent, empty, not a number) means fully opaque.
+	 *
+	 * @param mixed $value Saved value.
+	 * @return float
+	 */
+	public static function opacity( $value ) {
+		if ( ! is_scalar( $value ) || ! preg_match( '/^\d+$/', trim( (string) $value ) ) ) {
+			return 1.0;
+		}
+
+		return min( (int) $value, 100 ) / 100;
 	}
 
 	/**

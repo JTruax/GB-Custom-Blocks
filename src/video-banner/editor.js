@@ -22,6 +22,7 @@ import {
 	ExternalLink,
 	Notice,
 	PanelBody,
+	RangeControl,
 	TextControl,
 	ToggleControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- Only exported as experimental in WP 6.6–6.9; core and GenerateBlocks use it throughout.
@@ -41,6 +42,8 @@ import {
 	isBanner,
 	isVideoUrl,
 	KEY,
+	OPACITY,
+	opacityOf,
 	sourceIdOf,
 	useVideo,
 } from './shared';
@@ -304,12 +307,34 @@ function VideoPanel( { attributes, setAttributes } ) {
 
 			{ banner && (
 				<>
-					<p className="components-base-control__help">
-						{ __(
-							'The video plays muted and loops. Until it plays, and wherever it is switched off, this block’s own background shows: set a background colour or image in its Styles.',
+					<RangeControl
+						__next40pxDefaultSize
+						__nextHasNoMarginBottom
+						label={ __( 'Video opacity (%)', 'boim-blocks' ) }
+						min={ 0 }
+						max={ 100 }
+						step={ 1 }
+						value={ Math.round( opacityOf( html ) * 100 ) }
+						allowReset
+						resetFallbackValue={ 100 }
+						help={ __(
+							'Lower it to let this block’s background show through the video.',
 							'boim-blocks'
 						) }
-					</p>
+						onChange={ ( value ) =>
+							update( {
+								[ OPACITY ]:
+									undefined === value || value >= 100
+										? undefined
+										: String(
+												Math.max(
+													0,
+													Math.round( value )
+												)
+										  ),
+							} )
+						}
+					/>
 
 					<ToggleControl
 						__nextHasNoMarginBottom
@@ -380,6 +405,7 @@ function VideoPanel( { attributes, setAttributes } ) {
 							update( {
 								[ KEY ]: undefined,
 								[ BREAKPOINT ]: undefined,
+								[ OPACITY ]: undefined,
 							} )
 						}
 					>

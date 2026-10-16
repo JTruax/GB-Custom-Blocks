@@ -18,6 +18,7 @@ Insert **Video Banner** from the GenerateBlocks category, or pick a video in the
 * Two video sources: **Upload** (Media Library: MP4, WebM, Ogg) or **Video URL**.
 * The video plays in the block editor too, behind the content.
 * Plays muted and loops.
+* Video opacity option (0–100%), so the Container's background can show through.
 * **Disable on mobile** with a custom breakpoint (767px by default): the video file is never downloaded at that width and below. The Container's own background shows instead.
 * Never plays for visitors who prefer reduced motion or save data.
 * The video only loads near the viewport and pauses off-screen.

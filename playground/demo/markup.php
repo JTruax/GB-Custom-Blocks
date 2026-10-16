@@ -148,6 +148,14 @@ function boim_demo_markup( $media ) {
 				),
 				'Off at 1024px and below'
 			),
+			boim_demo_banner(
+				'o',
+				array(
+					'data-boim-video'         => $video,
+					'data-boim-video-opacity' => '50',
+				),
+				'Video at 50% opacity'
+			),
 			boim_demo_banner( 'e', array( 'data-boim-video' => $url ), 'From a URL' ),
 			boim_demo_banner( 'f', array( 'data-boim-video' => $video ), 'Outer banner', $nested ),
 			boim_demo_element(

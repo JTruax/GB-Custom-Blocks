@@ -31,11 +31,16 @@ test( 'a banner gets a decorative, empty, looping video layer', async ( {
 			},
 		],
 		maxWidth: 0,
+		opacity: 1,
 	} );
 	await expect( a ).toHaveClass( /\bboim-has-video\b/ );
 
 	// The raw settings don't reach the page.
-	for ( const name of [ 'data-boim-video', 'data-boim-video-max-width' ] ) {
+	for ( const name of [
+		'data-boim-video',
+		'data-boim-video-max-width',
+		'data-boim-video-opacity',
+	] ) {
 		expect( await a.getAttribute( name ), name ).toBeNull();
 	}
 
@@ -62,6 +67,7 @@ test( 'a banner gets a decorative, empty, looping video layer', async ( {
 
 	expect( ( await config( page, '#banner-b' ) ).maxWidth ).toBe( 767 );
 	expect( ( await config( page, '#banner-c' ) ).maxWidth ).toBe( 1024 );
+	expect( ( await config( page, '#banner-o' ) ).opacity ).toBe( 0.5 );
 	expect( ( await config( page, '#banner-e' ) ).sources[ 0 ].type ).toBe(
 		'video/mp4'
 	);
@@ -110,6 +116,43 @@ test( 'the breakpoint is a whole number of pixels, defaulting to 767', async ( {
 
 	for ( const [ id, [ , expected ] ] of Object.entries( cases ) ) {
 		expect( ( await config( page, `#${ id }` ) ).maxWidth, id ).toBe(
+			expected
+		);
+	}
+} );
+
+test( 'opacity is a whole percentage, defaulting to 100%', async ( {
+	page,
+} ) => {
+	const { webm } = await mediaIds( page );
+	const cases = {
+		empty: [ '', 1 ],
+		text: [ 'abc', 1 ],
+		negative: [ '-5', 1 ],
+		decimal: [ '0.5', 1 ],
+		zero: [ '0', 0 ],
+		some: [ '35', 0.35 ],
+		over: [ '150', 1 ],
+	};
+	const path = await testPage(
+		page,
+		'boim-opacities',
+		Object.entries( cases )
+			.map( ( [ id, [ value ] ] ) =>
+				banner( {
+					id,
+					'data-boim-video': String( webm ),
+					'data-boim-video-opacity': value,
+				} )
+			)
+			.join( '' )
+	);
+
+	await blockViewScript( page );
+	await page.goto( path );
+
+	for ( const [ id, [ , expected ] ] of Object.entries( cases ) ) {
+		expect( ( await config( page, `#${ id }` ) ).opacity, id ).toBe(
 			expected
 		);
 	}

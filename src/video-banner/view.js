@@ -29,7 +29,7 @@ const banners = new Set();
  * The checked config, or null.
  *
  * @param {HTMLElement} root Banner.
- * @return {Object|null} { sources, maxWidth }.
+ * @return {Object|null} { sources, maxWidth, opacity }.
  */
 function readConfig( root ) {
 	let config;
@@ -74,7 +74,13 @@ function readConfig( root ) {
 			? Math.min( width, MAX_BREAKPOINT )
 			: 0;
 
-	return { sources, maxWidth };
+	// 0-1; anything else means fully opaque.
+	const opacity =
+		'number' === typeof config.opacity && Number.isFinite( config.opacity )
+			? Math.min( Math.max( config.opacity, 0 ), 1 )
+			: 1;
+
+	return { sources, maxWidth, opacity };
 }
 
 /**
@@ -84,6 +90,7 @@ function readConfig( root ) {
  * @return {boolean} Enabled.
  */
 const isEnabled = ( banner ) =>
+	banner.config.opacity > 0 && // Invisible: not worth downloading.
 	! banner.failed &&
 	! banner.blocked &&
 	! banner.media?.matches &&
@@ -140,6 +147,7 @@ function update( banner ) {
 		// (also stopping a fade-in that's still running).
 		video.getAnimations?.().forEach( ( animation ) => animation.cancel() );
 		video.style.opacity = '0';
+		banner.shown = false;
 	}
 
 	if ( enabled && banner.near && ! document.hidden ) {
@@ -158,23 +166,25 @@ function update( banner ) {
 }
 
 /**
- * Fade the video in over the banner's background when it plays. Web
- * Animations, not a class: "remove unused CSS" tools can't strip it.
+ * Fade the video in over the banner's background when it plays, to the
+ * opacity set in the editor. Web Animations, not a class: "remove unused
+ * CSS" tools can't strip it.
  *
  * @param {Object} banner Banner state.
  */
 function reveal( banner ) {
-	const { video } = banner;
+	const { video, config } = banner;
 
 	// Already shown, or switched off since play() was called.
-	if ( '1' === video.style.opacity || ! isEnabled( banner ) ) {
+	if ( banner.shown || ! isEnabled( banner ) ) {
 		return;
 	}
 
-	video.style.opacity = '1';
+	banner.shown = true;
+	video.style.opacity = String( config.opacity );
 
 	if ( video.animate ) {
-		video.animate( [ { opacity: 0 }, { opacity: 1 } ], {
+		video.animate( [ { opacity: 0 }, { opacity: config.opacity } ], {
 			duration: 400,
 			easing: 'ease-out',
 		} );
@@ -227,6 +237,7 @@ function setup( root ) {
 		near: ! observer, // Without IntersectionObserver, treat it as visible.
 		loaded: false,
 		failed: false,
+		shown: false,
 	};
 
 	root.boimVideoBanner = banner;

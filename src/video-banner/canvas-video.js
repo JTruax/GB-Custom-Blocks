@@ -8,11 +8,18 @@
  * the mouse, so selecting and editing the blocks inside works as usual.
  *
  * Like the front end, it's switched off at or below the breakpoint, measured
- * in the canvas, so the editor's Tablet/Mobile previews show the result.
+ * in the canvas, so the editor's Tablet/Mobile previews show the result, and
+ * it's shown at the opacity set in the panel.
  */
 import { createPortal, useEffect, useRef, useState } from '@wordpress/element';
 
-import { breakpointOf, htmlAttributesOf, KEY, useVideo } from './shared';
+import {
+	breakpointOf,
+	htmlAttributesOf,
+	KEY,
+	opacityOf,
+	useVideo,
+} from './shared';
 
 /**
  * The document the blocks are in: the editor canvas iframe, or this page
@@ -106,6 +113,8 @@ export default function CanvasVideo( { clientId, attributes } ) {
 		return null;
 	}
 
+	const opacity = opacityOf( html );
+
 	return createPortal(
 		<div
 			className="boim-video-banner__media boim-video-banner__media--editor"
@@ -122,7 +131,7 @@ export default function CanvasVideo( { clientId, attributes } ) {
 				preload="auto"
 				disablePictureInPicture
 				tabIndex={ -1 }
-				style={ { opacity: off ? 0 : 1 } }
+				style={ { opacity: off ? 0 : opacity } }
 			/>
 		</div>,
 		element

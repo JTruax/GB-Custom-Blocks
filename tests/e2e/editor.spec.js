@@ -404,3 +404,43 @@ test( 'the video source: Upload or Video URL', async ( { page } ) => {
 		page.getByRole( 'button', { name: 'Upload or choose video' } )
 	).toBeVisible();
 } );
+
+test( 'video opacity: saved as a percentage and shown in the canvas', async ( {
+	page,
+} ) => {
+	await openEditor( page, await demoId( page ) );
+	const clientId = await openPanel( page, 'banner-a' );
+	const opacity = () =>
+		page.evaluate(
+			( id ) =>
+				window.wp.data
+					.select( 'core/block-editor' )
+					.getBlockAttributes( id ).htmlAttributes[
+					'data-boim-video-opacity'
+				],
+			clientId
+		);
+	const field = page.getByRole( 'spinbutton', { name: 'Video opacity (%)' } );
+
+	// 100% by default, and not saved.
+	await expect( field ).toHaveValue( '100' );
+	expect( await opacity() ).toBeUndefined();
+
+	await field.fill( '40' );
+	await expect.poll( opacity ).toBe( '40' );
+	await expect
+		.poll(
+			async () =>
+				( await videoState( canvasVideo( page, clientId ) ) ).opacity
+		)
+		.toBe( '0.4' );
+
+	// Back to 100: the attribute goes away again.
+	await field.fill( '100' );
+	await expect.poll( opacity ).toBeUndefined();
+
+	// The removed help paragraph stays removed.
+	await expect(
+		page.getByText( 'The video plays muted and loops.' )
+	).toHaveCount( 0 );
+} );

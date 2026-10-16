@@ -9,6 +9,7 @@ A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container**
    - **Video source**: choose one of two options.
      - **Upload**: upload a file or pick one from the Media Library (MP4, WebM or Ogg).
      - **Video URL**: paste a direct `http(s)` link to a file ending in `.mp4`, `.m4v`, `.webm` or `.ogv` (not a YouTube or Vimeo page). A link that isn't a video file is flagged when you leave the field, and not saved.
+   - **Video opacity (%)**: 100 by default. Lower it to let the Container's background show through the video. At 0 the video isn't downloaded at all. The overlay tint isn't affected.
    - **Disable on mobile** (off by default). Turning it on shows a **Breakpoint (px)** field, pre-filled with **767** (GenerateBlocks' mobile breakpoint). The video is switched off at that width and below, and the file is **never downloaded** there.
 3. The video plays behind the content **in the editor too**, so you can style the text over it. The editor's Tablet/Mobile previews show it switched off below your breakpoint.
 4. Style the banner and its content in GenerateBlocks as usual. Give the Container a background colour or image: it shows until the video plays, and wherever the video is switched off.
@@ -33,17 +34,19 @@ The video always plays muted and loops. There's no pause button and no poster im
   | Attribute | Value |
   |---|---|
   | `data-boim-video` | Media Library ID or URL. Also marks the Container as a banner (`""` = no file yet). |
+  | `data-boim-video-opacity` | Only present below 100: the video's opacity as a whole percentage (0–100). Invalid means 100. |
   | `data-boim-video-max-width` | Only present when "Disable on mobile" is on. The breakpoint in px (whole number, 1–4000; empty or invalid means 767). |
 
   If the plugin is switched off, the content is still a valid GenerateBlocks Container.
 - **On the server** (`render_block_generateblocks/element`), the settings are validated: Media Library files must be videos, URLs must be `http(s)` and end in a video extension. They're then replaced by a checked `data-boim-video-banner` config, plus a decorative layer (`aria-hidden`) holding an **empty**, muted, looping `<video>`.
 - **In the browser**, the view script (~2 KB gzipped, no dependencies) adds the `<source>` only when the video is allowed:
   - not at or below the breakpoint;
+  - not at 0% opacity;
   - only near the viewport;
   - never with `prefers-reduced-motion: reduce` or Save-Data.
 
-  It pauses the video off-screen and in background tabs. Resizing to the breakpoint or below pauses the video and hides it, and it comes back when the window is wider again. The video fades in over the Container's background once it actually plays.
-- **In the editor**, the same layer is rendered into the Container's element in the canvas (a React portal from an `editor.BlockEdit` filter; GB's own edit component is untouched). Nothing extra is saved. It plays muted and looping, stays still with reduced motion, and uses the canvas width for the breakpoint.
+  It pauses the video off-screen and in background tabs. Resizing to the breakpoint or below pauses the video and hides it, and it comes back when the window is wider again. The video fades in over the Container's background, to the chosen opacity, once it actually plays.
+- **In the editor**, the same layer is rendered into the Container's element in the canvas (a React portal from an `editor.BlockEdit` filter; GB's own edit component is untouched). Nothing extra is saved. It plays muted and looping at the chosen opacity, stays still with reduced motion, and uses the canvas width for the breakpoint.
 - Pages without a banner load **nothing** from this plugin. On GeneratePress (a classic theme), the small stylesheet is loaded in `<head>` for posts that contain a banner.
 
 ### Classes
@@ -93,14 +96,14 @@ The Playground command starts a local WordPress at http://127.0.0.1:9400 with Ge
 npm run test:e2e
 ```
 
-That runs 27 Playwright tests:
+That runs 31 Playwright tests:
 
 - **Assets:** nothing loads without a banner.
-- **Server markup:** checked before JS runs, including breakpoint parsing.
-- **Behaviour:** plays and loops; the breakpoint (default, custom, exact edge, resize); off-screen; nested banners; URL source.
+- **Server markup:** checked before JS runs, including breakpoint and opacity parsing.
+- **Behaviour:** plays and loops; opacity (fade target, 0% never downloads); the breakpoint (default, custom, exact edge, resize); off-screen; nested banners; URL source.
 - **Reduced motion** and an **axe scan** (light and dark).
 - **Forged configs.**
-- **Editor:** valid blocks, the variation, the panel, the two video source options, and the video playing in the canvas (including the breakpoint).
+- **Editor:** valid blocks, the variation, the panel, the two video source options, the opacity slider, and the video playing in the canvas (including the breakpoint).
 
 Locally the tests use your installed Chrome so MP4 plays. `node scripts/make-fixtures.js` regenerates the test videos.
 

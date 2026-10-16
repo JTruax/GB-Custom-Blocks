@@ -8,6 +8,7 @@ export const CONTAINER = 'generateblocks/element';
 
 export const KEY = 'data-boim-video';
 export const BREAKPOINT = 'data-boim-video-max-width';
+export const OPACITY = 'data-boim-video-opacity'; // 0-100 (%); absent = 100.
 export const DEFAULT_BREAKPOINT = '767'; // GenerateBlocks' mobile breakpoint.
 export const MAX_BREAKPOINT = 4000; // The same clamp as the server.
 
@@ -75,6 +76,19 @@ export const breakpointOf = ( html ) => {
 	return width > 0
 		? Math.min( width, MAX_BREAKPOINT )
 		: Number( DEFAULT_BREAKPOINT );
+};
+
+/**
+ * The video's opacity as the server reads it: a whole percentage, 0-1,
+ * fully opaque when absent or invalid.
+ *
+ * @param {Object} html htmlAttributes.
+ * @return {number} Opacity, 0-1.
+ */
+export const opacityOf = ( html ) => {
+	const value = String( html[ OPACITY ] ?? '' ).trim();
+
+	return /^\d+$/.test( value ) ? Math.min( Number( value ), 100 ) / 100 : 1;
 };
 
 /**

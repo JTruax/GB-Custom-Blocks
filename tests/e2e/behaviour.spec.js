@@ -123,6 +123,44 @@ test.describe( 'Desktop', () => {
 	} );
 } );
 
+test.describe( 'Opacity', () => {
+	test.use( { viewport: { width: 1280, height: 800 } } );
+
+	test( 'the video fades in to the opacity set in the editor', async ( {
+		page,
+	} ) => {
+		await page.goto( DEMO );
+		await page.locator( '#banner-o' ).scrollIntoViewIfNeeded();
+		await expect
+			.poll( async () => {
+				const state = await videoState( page, 'banner-o' );
+				return ! state.paused && state.time > 0 && state.opacity;
+			} )
+			.toBe( '0.5' );
+	} );
+
+	test( '0% never downloads the video', async ( { page } ) => {
+		const { webm } = await mediaIds( page );
+		const path = await testPage(
+			page,
+			'boim-opacity-zero',
+			banner( {
+				id: 'z',
+				'data-boim-video': String( webm ),
+				'data-boim-video-opacity': '0',
+			} )
+		);
+		const requests = recordVideoRequests( page );
+
+		await page.goto( path );
+		await page.waitForLoadState( 'networkidle' );
+		await page.waitForTimeout( 1000 );
+
+		expect( requests ).toEqual( [] );
+		expect( ( await videoState( page, 'z' ) ).sources ).toBe( 0 );
+	} );
+} );
+
 test.describe( 'Below the breakpoint', () => {
 	test.use( { viewport: { width: 375, height: 812 } } );
 
