@@ -28,8 +28,7 @@ test.describe( 'Assets', () => {
 			'build/video-banner/style-view.css',
 			'build/video-banner/view.js',
 		] );
-		// Only the test site's stand-in for GB Pro Global Styles.
-		expect( inline ).toEqual( [ 'boim-default-styles-inline-css' ] );
+		expect( inline ).toEqual( [] );
 		expect(
 			await page.locator( 'head link#boim-video-banner-view-css' ).count()
 		).toBe( 1 );

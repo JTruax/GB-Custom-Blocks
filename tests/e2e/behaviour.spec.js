@@ -58,10 +58,12 @@ test.describe( 'Desktop', () => {
 				.locator( '#banner-a > .boim-video-banner__media' )
 				.evaluate(
 					( node ) =>
+						window.getComputedStyle( node, '::after' ).content +
+						' ' +
 						window.getComputedStyle( node, '::after' )
 							.backgroundColor
 				)
-		).toBe( 'rgba(0, 0, 0, 0.55)' );
+		).toBe( '"" rgba(0, 0, 0, 0.55)' );
 		expect(
 			await page
 				.locator( '#banner-a video' )

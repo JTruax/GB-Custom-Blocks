@@ -23,7 +23,7 @@ Insert **Video Banner** from the GenerateBlocks category, or pick a video in the
 * Never plays for visitors who prefer reduced motion or save data.
 * The video only loads near the viewport and pauses off-screen.
 * Nothing loads on pages without a Video Banner.
-* Everything visible is a GenerateBlocks block. With GenerateBlocks Pro, the starting layout comes with Global Styles you can edit.
+* Everything visible is a GenerateBlocks block, inserted unstyled with no classes, so you style it all in GenerateBlocks.
 
 There's no pause button: a looping video longer than 5 seconds doesn't meet WCAG 2.2.2 on its own. Visitors who prefer reduced motion never see it.
 
@@ -33,7 +33,7 @@ If the plugin is deactivated, your banners remain valid GenerateBlocks Container
 
 = How do I darken the video so text is readable? =
 
-Keep the `boim-video-banner--overlay` class, or add the nested selector `& .boim-video-banner__media::after` to the Container's Styles (`content: ""`, `position: absolute`, inset 0, a background colour).
+Add the nested selector `& .boim-video-banner__media::after` to the Container's Styles (`content: ""`, `position: absolute`, inset 0, a background colour).
 
 = How do I change the video's focal point? =
 

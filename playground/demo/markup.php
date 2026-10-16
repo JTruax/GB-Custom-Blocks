@@ -37,7 +37,7 @@ function boim_demo_text( $id, $tag, $content, $extra = array() ) {
 
 	return sprintf(
 		'<!-- wp:generateblocks/text %1$s --><%2$s class="%3$s"%4$s>%5$s</%2$s><!-- /wp:generateblocks/text -->',
-		wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ),
+		serialize_block_attributes( $attrs ), // Escaped like the editor saves them (& < > " as \u00XX), so kses keeps them.
 		$tag,
 		implode( ' ', $classes ),
 		$html,
@@ -79,7 +79,7 @@ function boim_demo_element( $id, $tag, $extra, $inner ) {
 
 	return sprintf(
 		'<!-- wp:generateblocks/element %1$s --><%2$s%3$s>%4$s</%2$s><!-- /wp:generateblocks/element -->',
-		wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ),
+		serialize_block_attributes( $attrs ), // Escaped like the editor saves them (& < > " as \u00XX), so kses keeps them.
 		$tag,
 		$html,
 		$inner
@@ -87,7 +87,9 @@ function boim_demo_element( $id, $tag, $extra, $inner ) {
 }
 
 /**
- * A Video Banner as the inserter variation creates it.
+ * A Video Banner as the inserter variation creates it (no classes), styled
+ * the way a user would: GB local styles on the banner and its content,
+ * including a tint on the video layer.
  *
  * @param string $key      Short key, used for the id and uniqueIds.
  * @param array  $settings Video settings (data-boim-video…).
@@ -96,21 +98,56 @@ function boim_demo_element( $id, $tag, $extra, $inner ) {
  * @return string
  */
 function boim_demo_banner( $key, $settings, $title, $extra = '' ) {
+	$content_id = "vc{$key}00001";
+	$banner_id  = "vb{$key}00001";
+
 	$content = boim_demo_element(
-		"vc{$key}00001",
+		$content_id,
 		'div',
-		array( 'globalClasses' => array( 'boim-video-banner__content' ) ),
+		array(
+			'styles' => array(
+				'width'       => '100%',
+				'maxWidth'    => '1200px',
+				'marginRight' => 'auto',
+				'marginLeft'  => 'auto',
+			),
+			'css'    => ".gb-element-{$content_id}{width:100%;max-width:1200px;margin-right:auto;margin-left:auto}",
+		),
 		boim_demo_text( "vh{$key}00001", 'h2', esc_html( $title ) )
 			. boim_demo_text( "vp{$key}00001", 'p', 'Everything here is a GenerateBlocks block you can restyle.' )
 			. $extra
 	);
 
+	$tint = array(
+		'content'         => '""',
+		'position'        => 'absolute',
+		'top'             => '0',
+		'right'           => '0',
+		'bottom'          => '0',
+		'left'            => '0',
+		'backgroundColor' => 'rgba(0, 0, 0, 0.55)',
+	);
+
 	return boim_demo_element(
-		"vb{$key}00001",
+		$banner_id,
 		'section',
 		array(
 			'htmlAttributes' => array_merge( array( 'id' => 'banner-' . $key ), $settings ),
-			'globalClasses'  => array( 'boim-video-banner', 'boim-video-banner--overlay' ),
+			'styles'         => array(
+				'display'                            => 'flex',
+				'flexDirection'                      => 'column',
+				'justifyContent'                     => 'center',
+				'minHeight'                          => '70vh',
+				'paddingTop'                         => '6rem',
+				'paddingRight'                       => '1.5rem',
+				'paddingBottom'                      => '6rem',
+				'paddingLeft'                        => '1.5rem',
+				'backgroundColor'                    => '#111111',
+				'color'                              => '#ffffff',
+				'& .boim-video-banner__media::after' => $tint,
+			),
+			'css'            => ".gb-element-{$banner_id}{display:flex;flex-direction:column;justify-content:center;min-height:70vh;padding:6rem 1.5rem;background-color:#111111;color:#ffffff}"
+				. ".gb-element-{$banner_id} .boim-video-banner__media::after{content:\"\";position:absolute;top:0;right:0;bottom:0;left:0;background-color:rgba(0, 0, 0, 0.55)}",
 		),
 		$content
 	);

@@ -1,15 +1,15 @@
 # BOIM Blocks: Video Banner for GenerateBlocks
 
-A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container** that plays a video file as its background, muted and looping. You can switch the video off below a screen width you choose. Everything you see is a GenerateBlocks block, styled in GB's own Styles panel and Global Styles. The plugin only adds the video.
+A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container** that plays a video file as its background, muted and looping. You can switch the video off below a screen width you choose. Everything you see is a GenerateBlocks block, styled in GB's own Styles panel and Global Styles. The plugin only adds the video, and assigns no classes or styles: you style the banner yourself.
 
 ## Using it
 
-1. **Inserter → Video Banner** (in the GenerateBlocks category). It inserts a Container (`<section>`) with a content area, a heading and a paragraph.
+1. **Inserter → Video Banner** (in the GenerateBlocks category). It inserts an unstyled Container (`<section>`) with a content area, a heading and a paragraph. No classes or styles are assigned.
 2. In the block sidebar, open **Video background**:
    - **Video source**: choose one of two options.
      - **Upload**: upload a file or pick one from the Media Library (MP4, WebM or Ogg).
      - **Video URL**: paste a direct `http(s)` link to a file ending in `.mp4`, `.m4v`, `.webm` or `.ogv` (not a YouTube or Vimeo page). A link that isn't a video file is flagged when you leave the field, and not saved.
-   - **Video opacity (%)**: 100 by default. Lower it to let the Container's background show through the video. At 0 the video isn't downloaded at all. The overlay tint isn't affected.
+   - **Video opacity (%)**: 100 by default. Lower it to let the Container's background show through the video. At 0 the video isn't downloaded at all. A tint you add on the video layer (below) isn't affected.
    - **Disable on mobile** (off by default). Turning it on shows a **Breakpoint (px)** field, pre-filled with **767** (GenerateBlocks' mobile breakpoint). The video is switched off at that width and below, and the file is **never downloaded** there.
 3. The video plays behind the content **in the editor too**, so you can style the text over it. The editor's Tablet/Mobile previews show it switched off below your breakpoint.
 4. Style the banner and its content in GenerateBlocks as usual. Give the Container a background colour or image: it shows until the video plays, and wherever the video is switched off.
@@ -22,7 +22,7 @@ The video always plays muted and loops. There's no pause button and no poster im
 
 | You want… | Do this |
 |---|---|
-| A tint over the video, for readable text | Keep the `boim-video-banner--overlay` class. Or, in the Container's Styles, add the nested selector `& .boim-video-banner__media::after` with `content: ""`, `position: absolute`, top/right/bottom/left `0` and a background colour. (Not the Container's own `&::after`: the block editor uses it for the selection outline.) |
+| A tint over the video, for readable text | In the Container's Styles, add the nested selector `& .boim-video-banner__media::after` with `content: ""`, `position: absolute`, top/right/bottom/left `0` and a background colour. (Not the Container's own `&::after`: the block editor uses it for the selection outline.) |
 | A different focal point | In the Container's Styles, add the nested selector `& .boim-video-banner__media > *` and set `object-position` (e.g. `center top`). |
 | An image where the video is off | Set a background image on the Container in GB's Styles (optionally only in GB's mobile breakpoint). |
 | A full-width banner in GeneratePress | Set the page's *Content Container* to *Full Width* (Layout meta box), or put the banner in a GP Element. |
@@ -53,15 +53,7 @@ The video always plays muted and loops. There's no pause button and no poster im
 
 Added by PHP (structure only; don't use these names for Global Styles): `boim-has-video`, `boim-video-banner__media`, `boim-video-banner__video`.
 
-Default Global Styles, created once with **GenerateBlocks Pro** and never overwritten afterwards:
-
-| Class | What it does |
-|---|---|
-| `boim-video-banner` | Min height, padding, centred content, white text on a dark fallback background |
-| `boim-video-banner--overlay` | A 55% black tint between the video and the content (on `.boim-video-banner__media::after`) |
-| `boim-video-banner__content` | Max width 1200px, centred |
-
-Without GB Pro the banner still works; it's just unstyled until you style it.
+These only position the video behind the content (no colours, sizes or spacing). The plugin creates no Global Styles; the Video opacity setting is the one value it applies to the video itself.
 
 ## Accessibility note
 
@@ -90,7 +82,7 @@ npm run build
 npm run playground
 ```
 
-The Playground command starts a local WordPress at http://127.0.0.1:9400 with GenerateBlocks, GeneratePress and a demo page (`/video-banner-demo/`). The demo content is saved through kses, as an Author would save it. GB Pro can't run there, so a test-only mu-plugin prints the default Global Styles.
+The Playground command starts a local WordPress at http://127.0.0.1:9400 with GenerateBlocks, GeneratePress and a demo page (`/video-banner-demo/`). The demo content is saved through kses, as an Author would save it, and is styled with ordinary GB local styles, as a user would style it.
 
 ```bash
 npm run test:e2e

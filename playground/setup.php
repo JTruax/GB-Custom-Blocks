@@ -17,10 +17,6 @@ require_once ABSPATH . 'wp-admin/includes/media.php';
 
 $boim_dir = WP_CONTENT_DIR . '/plugins/boim-blocks/';
 
-// Test-only defaults for the Global Styles.
-wp_mkdir_p( WPMU_PLUGIN_DIR );
-copy( $boim_dir . 'playground/mu-plugin.php', WPMU_PLUGIN_DIR . '/boim-test.php' );
-
 update_option( 'permalink_structure', '/%postname%/' );
 flush_rewrite_rules();
 
@@ -74,7 +70,7 @@ wp_insert_post(
 		'post_status'  => 'publish',
 		'post_title'   => 'Video Banner demo',
 		'post_name'    => 'video-banner-demo',
-		'post_content' => $boim_content,
+		'post_content' => wp_slash( $boim_content ), // wp_insert_post() unslashes: keep the \u0026 escapes.
 	)
 );
 

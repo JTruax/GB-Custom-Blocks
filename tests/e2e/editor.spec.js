@@ -143,15 +143,39 @@ test( 'inserting the variation gives valid blocks that survive a save round trip
 
 		walk( reparsed );
 
+		const all = [];
+		const collect = ( list ) =>
+			list.forEach( ( block ) => {
+				all.push( block );
+				collect( block.innerBlocks );
+			} );
+		collect( first.innerBlocks );
+
 		return {
 			invalid,
 			html: blocks.serialize( first ),
+			attributes: {
+				globalClasses: first.attributes.globalClasses,
+				styles: first.attributes.styles,
+				innerGlobalClasses: all.flatMap(
+					( block ) => block.attributes.globalClasses || []
+				),
+				innerStyles: all
+					.map( ( block ) => block.attributes.styles || {} )
+					.filter( ( styles ) => Object.keys( styles ).length ),
+			},
 		};
 	} );
 
 	expect( roundTrip.invalid ).toEqual( [] );
 	expect( roundTrip.html ).toContain( 'data-boim-video=""' );
 	expect( roundTrip.html ).not.toContain( 'data-boim-video-part' );
+	// No classes or styles assigned: the user styles it in GenerateBlocks.
+	expect( roundTrip.html ).not.toMatch( /boim-video-banner/ );
+	expect( roundTrip.attributes.globalClasses ).toEqual( [] );
+	expect( Object.keys( roundTrip.attributes.styles ) ).toEqual( [] ); // GB stores empty styles as [].
+	expect( roundTrip.attributes.innerGlobalClasses ).toEqual( [] );
+	expect( roundTrip.attributes.innerStyles ).toEqual( [] );
 	expect( await invalidBlocks( page ) ).toEqual( [] );
 } );
 
@@ -299,9 +323,14 @@ test( 'the video plays behind the banner in the editor canvas', async ( {
 				node.ownerDocument.defaultView.getComputedStyle(
 					node,
 					'::after'
+				).content +
+				' ' +
+				node.ownerDocument.defaultView.getComputedStyle(
+					node,
+					'::after'
 				).backgroundColor
 		)
-	).toBe( 'rgba(0, 0, 0, 0.55)' );
+	).toBe( '"" rgba(0, 0, 0, 0.55)' );
 
 	// Nothing is saved for it: the block's content is unchanged.
 	expect( await invalidBlocks( page ) ).toEqual( [] );
@@ -313,7 +342,7 @@ test( 'the video plays behind the banner in the editor canvas', async ( {
 				),
 			clientId
 		)
-	).not.toContain( 'boim-video-banner__media' );
+	).not.toMatch( /<video|class="boim-video-banner__media/ );
 } );
 
 test( 'the canvas preview follows the breakpoint', async ( { page } ) => {

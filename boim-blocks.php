@@ -22,7 +22,6 @@ define( 'BOIM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BOIM_URL', plugin_dir_url( __FILE__ ) );
 
 require_once BOIM_DIR . 'includes/class-boim-video-banner.php';
-require_once BOIM_DIR . 'includes/class-boim-global-styles.php';
 
 add_action( 'init', 'boim_register_assets' );
 /**
@@ -139,4 +138,3 @@ function boim_generateblocks_notice() {
 }
 
 Boim_Video_Banner::init();
-Boim_Global_Styles::init();

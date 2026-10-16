@@ -8,7 +8,7 @@
  * settings into the video layer (includes/class-boim-video-banner.php); in
  * the editor, canvas-video.js plays the same video behind the content.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import {
@@ -49,13 +49,10 @@ import {
 } from './shared';
 import './editor.scss';
 
-const OVERLAY_CLASS = 'boim-video-banner--overlay';
-
 /*
  * The "Video Banner" entry in the inserter: a Container with the video
- * setting switched on and a starting layout. Looks come from GB Pro Global
- * Styles the plugin creates (includes/global-styles/video-banner.php);
- * without GB Pro the layout is unstyled but works.
+ * setting switched on and a starting layout. Nothing is styled or given a
+ * class: the user styles every part in GenerateBlocks.
  */
 const variation = {
 	name: 'boim/video-banner',
@@ -74,7 +71,6 @@ const variation = {
 	attributes: {
 		tagName: 'section',
 		htmlAttributes: { [ KEY ]: '' },
-		globalClasses: [ 'boim-video-banner', OVERLAY_CLASS ],
 		metadata: { name: __( 'Video Banner', 'boim-blocks' ) },
 	},
 	innerBlocks: [
@@ -82,7 +78,6 @@ const variation = {
 			'generateblocks/element',
 			{
 				tagName: 'div',
-				globalClasses: [ 'boim-video-banner__content' ],
 				metadata: { name: __( 'Content', 'boim-blocks' ) },
 			},
 			[
@@ -369,17 +364,13 @@ function VideoPanel( { attributes, setAttributes } ) {
 						/>
 					) }
 
-					{ ! ( attributes.globalClasses || [] ).includes(
-						OVERLAY_CLASS
+					{ ! JSON.stringify( attributes.styles || {} ).includes(
+						'boim-video-banner__media::after'
 					) && (
 						<Notice status="info" isDismissible={ false }>
-							{ sprintf(
-								/* translators: %s: a CSS class name. */
-								__(
-									'Text over moving video is hard to read. Add the %s class, or a tint in this block’s Styles with the nested selector “& .boim-video-banner__media::after” (content: "", position: absolute, inset 0, a background colour).',
-									'boim-blocks'
-								),
-								OVERLAY_CLASS
+							{ __(
+								'Text over moving video is hard to read. Add a tint in this block’s Styles with the nested selector “& .boim-video-banner__media::after” (content: "", position: absolute, inset 0, a background colour).',
+								'boim-blocks'
 							) }
 						</Notice>
 					) }

@@ -10,7 +10,6 @@ const ROOT = path.join( __dirname, '..' );
 const SLUG = 'boim-blocks';
 const FILES = [
 	'boim-blocks.php',
-	'uninstall.php',
 	'readme.txt',
 	'LICENSE',
 	'includes',
