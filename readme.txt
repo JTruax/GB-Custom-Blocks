@@ -9,7 +9,7 @@ Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Custom blocks collection that are fully compatible with GenerateBlocks.
+A collection of custom blocks that are compatible with GenerateBlocks.
 
 == Description ==
 

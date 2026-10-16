@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       BOIM Blocks
- * Description:       Custom blocks collection that are fully compatible with GenerateBlocks.
+ * Description:       A collection of custom blocks that are compatible with GenerateBlocks.
  * Version:           0.1.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
