@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       BOIM Blocks
- * Description:       A Video Banner for GenerateBlocks: any GenerateBlocks Container can play a looping video file as its background, switched off below a screen width you choose.
+ * Description:       Custom blocks collection that are fully compatible with GenerateBlocks.
  * Version:           0.1.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
