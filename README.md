@@ -14,7 +14,7 @@ A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container**
 3. The video plays behind the content **in the editor too**, so you can style the text over it. The editor's Tablet/Mobile previews show it switched off below your breakpoint.
 4. Style the banner and its content in GenerateBlocks as usual. Give the Container a background colour or image: it shows until the video plays, and wherever the video is switched off.
 
-Any existing Container can become a video banner too: select it and choose a video in the **Video background** panel.
+The **Video background** panel only appears on Video Banner blocks; ordinary Containers are left alone. **Remove video** clears the video but keeps the block a Video Banner.
 
 The video always plays muted and loops. There's no pause button and no poster image.
 

@@ -30,7 +30,7 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- As above.
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 import CanvasVideo from './canvas-video';
 import { videoBannerIcon } from './icon';
@@ -149,6 +149,14 @@ function VideoSource( { source, onChange } ) {
 	const [ checked, setChecked ] = useState( false );
 	const { media } = useVideo( source );
 	const urlError = checked && '' !== url.trim() && ! isVideoUrl( url.trim() );
+
+	// "Remove video" clears the saved source: clear the URL field with it.
+	useEffect( () => {
+		if ( '' === String( source ?? '' ) ) {
+			setUrl( '' );
+			setChecked( false );
+		}
+	}, [ source ] );
 
 	let fileName = __( 'No video chosen yet.', 'boim-blocks' );
 
@@ -272,7 +280,7 @@ function VideoSource( { source, onChange } ) {
  */
 function VideoPanel( { attributes, setAttributes } ) {
 	const html = htmlAttributesOf( attributes );
-	const banner = Object.hasOwn( html, KEY );
+	const hasVideo = '' !== String( html[ KEY ] ?? '' );
 	const mobileOff = Object.hasOwn( html, BREAKPOINT );
 
 	// Only the keys given change; undefined removes a key. Always a copy.
@@ -291,103 +299,92 @@ function VideoPanel( { attributes, setAttributes } ) {
 	};
 
 	return (
-		<PanelBody
-			title={ __( 'Video background', 'boim-blocks' ) }
-			initialOpen={ banner }
-		>
+		<PanelBody title={ __( 'Video background', 'boim-blocks' ) }>
 			<VideoSource
 				source={ html[ KEY ] }
 				onChange={ ( value ) => update( { [ KEY ]: value } ) }
 			/>
 
-			{ banner && (
-				<>
-					<RangeControl
-						__next40pxDefaultSize
-						__nextHasNoMarginBottom
-						label={ __( 'Video opacity (%)', 'boim-blocks' ) }
-						min={ 0 }
-						max={ 100 }
-						step={ 1 }
-						value={ Math.round( opacityOf( html ) * 100 ) }
-						allowReset
-						resetFallbackValue={ 100 }
-						help={ __(
-							'Lower it to let this block’s background show through the video.',
-							'boim-blocks'
-						) }
-						onChange={ ( value ) =>
-							update( {
-								[ OPACITY ]:
-									undefined === value || value >= 100
-										? undefined
-										: String(
-												Math.max(
-													0,
-													Math.round( value )
-												)
-										  ),
-							} )
-						}
-					/>
+			<RangeControl
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+				label={ __( 'Video opacity (%)', 'boim-blocks' ) }
+				min={ 0 }
+				max={ 100 }
+				step={ 1 }
+				value={ Math.round( opacityOf( html ) * 100 ) }
+				allowReset
+				resetFallbackValue={ 100 }
+				help={ __(
+					'Lower it to let this block’s background show through the video.',
+					'boim-blocks'
+				) }
+				onChange={ ( value ) =>
+					update( {
+						[ OPACITY ]:
+							undefined === value || value >= 100
+								? undefined
+								: String( Math.max( 0, Math.round( value ) ) ),
+					} )
+				}
+			/>
 
-					<ToggleControl
-						__nextHasNoMarginBottom
-						label={ __( 'Disable on mobile', 'boim-blocks' ) }
-						checked={ mobileOff }
-						onChange={ ( on ) =>
-							update( {
-								[ BREAKPOINT ]: on
-									? DEFAULT_BREAKPOINT
-									: undefined,
-							} )
-						}
-					/>
-					{ mobileOff && (
-						<TextControl
-							__next40pxDefaultSize
-							__nextHasNoMarginBottom
-							type="number"
-							min={ 1 }
-							max={ 4000 }
-							step={ 1 }
-							label={ __( 'Breakpoint (px)', 'boim-blocks' ) }
-							value={ html[ BREAKPOINT ] ?? '' }
-							onChange={ ( value ) =>
-								update( {
-									[ BREAKPOINT ]: String( value ).replace(
-										/\D/g,
-										''
-									),
-								} )
-							}
-						/>
-					) }
+			<ToggleControl
+				__nextHasNoMarginBottom
+				label={ __( 'Disable on mobile', 'boim-blocks' ) }
+				checked={ mobileOff }
+				onChange={ ( on ) =>
+					update( {
+						[ BREAKPOINT ]: on ? DEFAULT_BREAKPOINT : undefined,
+					} )
+				}
+			/>
+			{ mobileOff && (
+				<TextControl
+					__next40pxDefaultSize
+					__nextHasNoMarginBottom
+					type="number"
+					min={ 1 }
+					max={ 4000 }
+					step={ 1 }
+					label={ __( 'Breakpoint (px)', 'boim-blocks' ) }
+					value={ html[ BREAKPOINT ] ?? '' }
+					onChange={ ( value ) =>
+						update( {
+							[ BREAKPOINT ]: String( value ).replace(
+								/\D/g,
+								''
+							),
+						} )
+					}
+				/>
+			) }
 
-					<p className="components-base-control__help">
-						{ __(
-							'Focal point: in this block’s Styles, add the nested selector “& .boim-video-banner__media > *” and set object-position.',
-							'boim-blocks'
-						) }{ ' ' }
-						<ExternalLink href="https://developer.mozilla.org/docs/Web/CSS/object-position">
-							{ __( 'About object-position', 'boim-blocks' ) }
-						</ExternalLink>
-					</p>
+			<p className="components-base-control__help">
+				{ __(
+					'Focal point: in this block’s Styles, add the nested selector “& .boim-video-banner__media > *” and set object-position.',
+					'boim-blocks'
+				) }{ ' ' }
+				<ExternalLink href="https://developer.mozilla.org/docs/Web/CSS/object-position">
+					{ __( 'About object-position', 'boim-blocks' ) }
+				</ExternalLink>
+			</p>
 
-					<Button
-						variant="tertiary"
-						isDestructive
-						onClick={ () =>
-							update( {
-								[ KEY ]: undefined,
-								[ BREAKPOINT ]: undefined,
-								[ OPACITY ]: undefined,
-							} )
-						}
-					>
-						{ __( 'Remove video background', 'boim-blocks' ) }
-					</Button>
-				</>
+			{ hasVideo && (
+				<Button
+					variant="tertiary"
+					isDestructive
+					onClick={ () =>
+						// Still a Video Banner (the marker stays), just without a video.
+						update( {
+							[ KEY ]: '',
+							[ BREAKPOINT ]: undefined,
+							[ OPACITY ]: undefined,
+						} )
+					}
+				>
+					{ __( 'Remove video', 'boim-blocks' ) }
+				</Button>
 			) }
 		</PanelBody>
 	);
@@ -400,21 +397,18 @@ const withVideoBanner = createHigherOrderComponent(
 			return <BlockEdit { ...props } />;
 		}
 
-		const banner = isBanner( props.attributes );
-
-		if ( ! banner && ! props.isSelected ) {
+		// Only Video Banners: a plain Container gets nothing from this plugin.
+		if ( ! isBanner( props.attributes ) ) {
 			return <BlockEdit { ...props } />;
 		}
 
 		return (
 			<>
 				<BlockEdit { ...props } />
-				{ banner && (
-					<CanvasVideo
-						clientId={ props.clientId }
-						attributes={ props.attributes }
-					/>
-				) }
+				<CanvasVideo
+					clientId={ props.clientId }
+					attributes={ props.attributes }
+				/>
 				{ props.isSelected && (
 					<InspectorControls>
 						<VideoPanel { ...props } />

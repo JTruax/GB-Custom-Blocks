@@ -12,7 +12,7 @@ A collection of custom blocks that are compatible with GenerateBlocks.
 
 == Description ==
 
-Insert **Video Banner** from the GenerateBlocks category, or pick a video in the **Video background** panel of any GenerateBlocks Container.
+Insert **Video Banner** from the GenerateBlocks category, then choose its video in the block's **Video background** panel. Ordinary GenerateBlocks Containers are left alone.
 
 * Two video sources: **Upload** (Media Library: MP4, WebM, Ogg) or **Video URL**.
 * The video plays in the block editor too, behind the content.

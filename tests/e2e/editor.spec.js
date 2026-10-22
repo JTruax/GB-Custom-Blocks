@@ -232,17 +232,47 @@ test( 'the Video background panel writes htmlAttributes', async ( {
 
 	await page.getByRole( 'checkbox', { name: 'Disable on mobile' } ).check();
 
-	// Remove clears every video setting, nothing else.
-	await page
-		.getByRole( 'button', { name: 'Remove video background' } )
-		.click();
+	// Remove video clears the video and its settings, nothing else. The
+	// block stays a Video Banner (empty marker), so the panel stays too.
+	await page.getByRole( 'button', { name: 'Remove video' } ).click();
 	const removed = await html();
 	expect(
 		Object.keys( removed ).filter( ( key ) =>
 			key.startsWith( 'data-boim-video' )
 		)
-	).toEqual( [] );
+	).toEqual( [ 'data-boim-video' ] );
+	expect( removed[ 'data-boim-video' ] ).toBe( '' );
 	expect( removed ).toHaveProperty( 'id', 'banner-a' );
+	await expect( panel ).toBeVisible();
+	await expect(
+		page.getByRole( 'button', { name: 'Remove video' } )
+	).toHaveCount( 0 );
+	await expect(
+		page.getByRole( 'button', { name: 'Upload or choose video' } )
+	).toBeVisible();
+} );
+
+test( 'a plain Container has no Video background panel', async ( { page } ) => {
+	await openEditor( page, await demoId( page ) );
+
+	// The demo's spacer is an ordinary GenerateBlocks Container.
+	await page.evaluate( () => {
+		const { select, dispatch } = window.wp.data;
+		const spacer = select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => 'sp000001' === block.attributes.uniqueId );
+
+		dispatch( 'core/block-editor' ).selectBlock( spacer.clientId );
+		dispatch( 'core/edit-post' ).openGeneralSidebar( 'edit-post/block' );
+	} );
+
+	// GB's own settings are there; ours aren't.
+	await expect(
+		page.getByText( 'Tag Name', { exact: false } ).first()
+	).toBeVisible();
+	await expect(
+		page.getByRole( 'button', { name: 'Video background', exact: true } )
+	).toHaveCount( 0 );
 } );
 
 /**
