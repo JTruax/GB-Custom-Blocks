@@ -22,6 +22,18 @@ define( 'BOIM_URL', plugin_dir_url( __FILE__ ) );
 
 require_once BOIM_DIR . 'includes/class-boim-video-banner.php';
 
+add_action( 'init', 'boim_register_blocks' );
+/**
+ * Blocks with their own block.json. Patterns only exists in the editor: it
+ * opens the GenerateBlocks Pattern Library and is replaced by the pattern
+ * chosen, so on the front end it renders nothing and loads nothing.
+ */
+function boim_register_blocks() {
+	if ( file_exists( BOIM_DIR . 'build/patterns/block.json' ) ) {
+		register_block_type( BOIM_DIR . 'build/patterns', array( 'render_callback' => '__return_empty_string' ) );
+	}
+}
+
 add_action( 'init', 'boim_register_assets' );
 /**
  * Register (not enqueue) the scripts and styles. The front-end files are only

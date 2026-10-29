@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "boim/patterns",
+	"version": "0.1.0",
+	"title": "Patterns",
+	"category": "generateblocks",
+	"description": "Insert one of your site's local patterns from the GenerateBlocks Pattern Library.",
+	"keywords": [ "pattern", "patterns", "library", "local", "generateblocks" ],
+	"textdomain": "boim-blocks",
+	"supports": {
+		"html": false,
+		"reusable": false,
+		"className": false,
+		"customClassName": false
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

@@ -161,12 +161,18 @@ async function openEditor( page, postId ) {
 		}
 	);
 
-	// Close the welcome guide if it's there.
+	// Turn the welcome guide off, and close it if it's already showing.
 	await page.evaluate( () => {
 		const prefs = window.wp.data.dispatch( 'core/preferences' );
 		prefs?.set( 'core/edit-post', 'welcomeGuide', false );
 		prefs?.set( 'core', 'welcomeGuide', false );
 	} );
+
+	const guide = page.getByRole( 'dialog', { name: /welcome/i } );
+
+	if ( await guide.isVisible().catch( () => false ) ) {
+		await guide.getByRole( 'button', { name: 'Close' } ).click();
+	}
 }
 
 /**

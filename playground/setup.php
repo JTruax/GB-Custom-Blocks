@@ -17,6 +17,10 @@ require_once ABSPATH . 'wp-admin/includes/media.php';
 
 $boim_dir = WP_CONTENT_DIR . '/plugins/boim-blocks/';
 
+// Test-only stand-in for GenerateBlocks Pro's Local pattern library.
+wp_mkdir_p( WPMU_PLUGIN_DIR );
+copy( $boim_dir . 'playground/mu-plugin-patterns.php', WPMU_PLUGIN_DIR . '/boim-test-patterns.php' );
+
 update_option( 'permalink_structure', '/%postname%/' );
 flush_rewrite_rules();
 

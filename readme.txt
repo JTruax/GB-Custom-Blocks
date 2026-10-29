@@ -12,7 +12,16 @@ A collection of custom blocks that are compatible with GenerateBlocks.
 
 == Description ==
 
-Insert **Video Banner** from the GenerateBlocks category, then choose its video in the block's **Video background** panel. Ordinary GenerateBlocks Containers are left alone.
+Two blocks, in the GenerateBlocks category.
+
+**Patterns** adds one of your site's local patterns (the Local library GenerateBlocks Pro adds to the GenerateBlocks Pattern Library) right where you put the block:
+
+* Adding the block opens the GenerateBlocks Pattern Library on your Local library.
+* The pattern you insert takes the block's place, also inside a Container.
+* Closed without choosing? The block stays as a placeholder with an "Open local patterns" button. It outputs nothing on the front end.
+* No GenerateBlocks Pro? It opens the Pattern Library on its default library instead.
+
+**Video Banner**: insert it, then choose its video in the block's **Video background** panel. Ordinary GenerateBlocks Containers are left alone.
 
 * Two video sources: **Upload** (Media Library: MP4, WebM, Ogg) or **Video URL**.
 * The video plays in the block editor too, behind the content.

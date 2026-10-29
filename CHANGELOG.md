@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New: **Patterns** block. Adding it opens the GenerateBlocks Pattern Library on the site's Local library (GenerateBlocks Pro); the pattern inserted takes the block's place. Closed without choosing, it stays as a placeholder that renders nothing on the front end.
+
 ## 0.1.0 (2026-10-16)
 
 - New: **Video Banner**. A GenerateBlocks Container with a muted, looping video file as its background (Media Library or URL).

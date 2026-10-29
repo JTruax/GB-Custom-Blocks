@@ -1,8 +1,15 @@
-# BOIM Blocks: Video Banner for GenerateBlocks
+# BOIM Blocks
+
+A collection of custom blocks that are compatible with GenerateBlocks 2.x:
+
+- **[Video Banner](#video-banner)**: a GenerateBlocks Container with a looping video background.
+- **[Patterns](#patterns)**: adds one of your site's local patterns from the GenerateBlocks Pattern Library, right where you put the block.
+
+## Video Banner
 
 A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container** that plays a video file as its background, muted and looping. You can switch the video off below a screen width you choose. Everything you see is a GenerateBlocks block, styled in GB's own Styles panel and Global Styles. The plugin only adds the video, and assigns no classes or styles: you style the banner yourself.
 
-## Using it
+### Using it
 
 1. **Inserter → Video Banner** (in the GenerateBlocks category). It inserts an unstyled Container (`<section>`) with a content area, a heading and a paragraph. No classes or styles are assigned.
 2. In the block sidebar, open **Video background**:
@@ -18,7 +25,7 @@ The **Video background** panel only appears on Video Banner blocks; ordinary Con
 
 The video always plays muted and loops. There's no pause button and no poster image.
 
-### Styling tips
+#### Styling tips
 
 | You want… | Do this |
 |---|---|
@@ -27,7 +34,7 @@ The video always plays muted and loops. There's no pause button and no poster im
 | An image where the video is off | Set a background image on the Container in GB's Styles (optionally only in GB's mobile breakpoint). |
 | A full-width banner in GeneratePress | Set the page's *Content Container* to *Full Width* (Layout meta box), or put the banner in a GP Element. |
 
-## How it works
+### How it works
 
 - The settings are stored in the Container's own `htmlAttributes` (GB saves and renders them):
 
@@ -49,13 +56,13 @@ The video always plays muted and loops. There's no pause button and no poster im
 - **In the editor**, the same layer is rendered into the Container's element in the canvas (a React portal from an `editor.BlockEdit` filter; GB's own edit component is untouched). Nothing extra is saved. It plays muted and looping at the chosen opacity, stays still with reduced motion, and uses the canvas width for the breakpoint.
 - Pages without a banner load **nothing** from this plugin. On GeneratePress (a classic theme), the small stylesheet is loaded in `<head>` for posts that contain a banner.
 
-### Classes
+#### Classes
 
 Added by PHP (structure only; don't use these names for Global Styles): `boim-has-video`, `boim-video-banner__media`, `boim-video-banner__video`.
 
 These only position the video behind the content (no colours, sizes or spacing). The plugin creates no Global Styles; the Video opacity setting is the one value it applies to the video itself.
 
-## Accessibility note
+### Accessibility note
 
 A video that moves for more than 5 seconds with no way to pause it doesn't meet WCAG 2.2.2 (Pause, Stop, Hide, level A). This plugin doesn't include a pause button, by design. To limit the impact:
 
@@ -64,9 +71,34 @@ A video that moves for more than 5 seconds with no way to pause it doesn't meet 
 
 If a site needs WCAG 2.2 A/AA conformance, add your own pause control or keep banner videos under 5 seconds without looping.
 
-## Known limitations
+### Known limitations
 
 - URL sources can point at any host, like an image URL in a post.
+
+## Patterns
+
+A block for adding one of your site's **local patterns** (the Local library that GenerateBlocks Pro adds to the GenerateBlocks Pattern Library) exactly where you want it.
+
+### Using it
+
+1. Add the **Patterns** block (GenerateBlocks category, or type `/patterns`) where the pattern should go: between blocks, or inside a Container.
+2. The GenerateBlocks Pattern Library opens straight away on your **Local** library.
+3. Pick a pattern and click **Insert** (or use **Bulk Insert**). The pattern takes the Patterns block's place.
+4. If you close the library without choosing, the Patterns block stays as a placeholder. Click **Open local patterns** to try again, or delete it.
+
+A leftover placeholder outputs nothing on the front end and loads no files there.
+
+If the site has no Local library (no GenerateBlocks Pro), the block opens the Pattern Library on its default library instead, and says so. If GenerateBlocks' Pattern Library is turned off or GenerateBlocks isn't active, the block shows a notice instead of opening it.
+
+### How it works
+
+It uses GenerateBlocks' own Pattern Library rather than imitating it:
+
+- It finds the Local library through GB's `/generateblocks/v1/pattern-library/libraries` endpoint (the library flagged `isLocal`), and sets it as the library to open first (`generateBlocksPatternLibrary.defaultOpenLibrary`) while the library is open.
+- It swaps itself for an empty paragraph in the same spot and opens the library with GB's `generateblocks.patternLibrary.open` action. GB's Insert replaces an empty selected paragraph with the pattern, so the pattern lands exactly there.
+- When the library closes, GB's setting is put back, and if nothing was inserted the Patterns block returns. Neither swap is an undo step.
+
+These are GenerateBlocks internals (2.5), not a documented API, so each is checked before use. A future GenerateBlocks release could change them.
 
 ## Development
 
@@ -82,13 +114,13 @@ npm run build
 npm run playground
 ```
 
-The Playground command starts a local WordPress at http://127.0.0.1:9400 with GenerateBlocks, GeneratePress and a demo page (`/video-banner-demo/`). The demo content is saved through kses, as an Author would save it, and is styled with ordinary GB local styles, as a user would style it.
+The Playground command starts a local WordPress at http://127.0.0.1:9400 with GenerateBlocks, GeneratePress and a demo page (`/video-banner-demo/`). For the Patterns block, a test-only mu-plugin adds a stand-in "Local (test)" library with one pattern, since GenerateBlocks Pro can't run there. The demo content is saved through kses, as an Author would save it, and is styled with ordinary GB local styles, as a user would style it.
 
 ```bash
 npm run test:e2e
 ```
 
-That runs 31 Playwright tests:
+That runs 40 Playwright tests:
 
 - **Assets:** nothing loads without a banner.
 - **Server markup:** checked before JS runs, including breakpoint and opacity parsing.
@@ -96,6 +128,7 @@ That runs 31 Playwright tests:
 - **Reduced motion** and an **axe scan** (light and dark).
 - **Forged configs.**
 - **Editor:** valid blocks, the variation, the panel, the two video source options, the opacity slider, and the video playing in the canvas (including the breakpoint).
+- **Patterns:** in the inserter; opens on the Local library; GB's Insert puts the pattern in the block's place (also inside a Container); closing keeps the placeholder with no extra undo steps; the button reopens it; no auto-open on load; the notice when GB's library is unavailable; nothing on the front end.
 
 Locally the tests use your installed Chrome so MP4 plays. `node scripts/make-fixtures.js` regenerates the test videos.
 
