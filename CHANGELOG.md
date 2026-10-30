@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed: Synced patterns inserted from the **Patterns** block were still detached on sites with GenerateBlocks Pro, whose own Insert button replaced the Patterns block's.
+
 ## 1.0.0 (2026-10-30)
 
 - Fixed: Synced patterns inserted from the **Patterns** block now stay synced (inserted as a synced reference). GenerateBlocks' Insert always inserted a copy. Unsynced and remote patterns are still inserted as copies.

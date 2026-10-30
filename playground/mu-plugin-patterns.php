@@ -130,3 +130,39 @@ add_action(
 		);
 	}
 );
+
+/*
+ * GenerateBlocks Pro's own "generateblocks.patterns.insertPatternButton"
+ * filter (GB Pro 2.8, insert-dependencies.js) ignores the button it's given
+ * and returns a new one, which awaits Pro's dependency imports before calling
+ * GB's onClick. A stand-in with the same behaviour, added after the Patterns
+ * block's script, as on a real GB Pro site.
+ */
+add_action(
+	'enqueue_block_editor_assets',
+	static function () {
+		wp_register_script(
+			'boim-test-gb-pro-insert',
+			false,
+			array( 'wp-hooks', 'wp-element', 'wp-components', 'boim-patterns-editor-script' ),
+			'1',
+			true
+		);
+		wp_enqueue_script( 'boim-test-gb-pro-insert' );
+		wp_add_inline_script(
+			'boim-test-gb-pro-insert',
+			"wp.hooks.addFilter( 'generateblocks.patterns.insertPatternButton', 'boim-test/gb-pro-insert', function ( button, props ) {
+				return wp.element.createElement( wp.components.Button, {
+					variant: 'primary',
+					className: props.className,
+					disabled: props.disabled,
+					onClick: async function ( e ) {
+						await Promise.resolve();
+						await props.onClick( e );
+					},
+				}, props.label );
+			} );"
+		);
+	},
+	100
+);

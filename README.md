@@ -101,7 +101,7 @@ It uses GenerateBlocks' own Pattern Library rather than imitating it:
 - It finds the Local library through GB's `/generateblocks/v1/pattern-library/libraries` endpoint (switched-on libraries flagged `isLocal`, preferring Pro's default `local-patterns` collection), and sets it as the library to open first (`generateBlocksPatternLibrary.defaultOpenLibrary`) while the library is open.
 - It swaps itself for an empty paragraph in the same spot and opens the library with GB's `generateblocks.patternLibrary.open` action. GB's Insert replaces an empty selected paragraph with the pattern, so the pattern lands exactly there.
 - When the library closes, GB's setting is put back, and if nothing was inserted the Patterns block returns. Neither swap is an undo step.
-- **Synced patterns:** GB Pro lists each local pattern as `id: "pattern-<post ID>"` with its full content (`build_tree()` in GB Pro 2.8). While the library is open for a Patterns block, GB's Insert button is wrapped through GB's `generateblocks.patterns.insertPatternButton` filter. If every pattern being inserted is a synced `wp_block` on this site with identical content (compared as parsed blocks), a `core/block` reference replaces the paragraph instead and the library closes. Anything else goes to GB's Insert untouched.
+- **Synced patterns:** GB Pro lists each local pattern as `id: "pattern-<post ID>"` with its full content (`build_tree()` in GB Pro 2.8). While the library is open for a Patterns block, GB's Insert button is wrapped through GB's `generateblocks.patterns.insertPatternButton` filter, at a later priority than GB Pro's own filter on it (which replaces the button it's given). If every pattern being inserted is a synced `wp_block` on this site with identical content (compared as parsed blocks), a `core/block` reference replaces the paragraph instead and the library closes. Anything else goes to GB's Insert untouched.
 
 These are GenerateBlocks internals (GB 2.5 / GB Pro 2.8), not a documented API, so each is checked before use. A future GenerateBlocks release could change them.
 
@@ -119,7 +119,7 @@ npm run build
 npm run playground
 ```
 
-The Playground command starts a local WordPress at http://127.0.0.1:9400 with GenerateBlocks, GeneratePress and a demo page (`/video-banner-demo/`). For the Patterns block, a test-only mu-plugin adds a stand-in "Local (test)" library with one pattern, since GenerateBlocks Pro can't run there. The demo content is saved through kses, as an Author would save it, and is styled with ordinary GB local styles, as a user would style it.
+The Playground command starts a local WordPress at http://127.0.0.1:9400 with GenerateBlocks, GeneratePress and a demo page (`/video-banner-demo/`). For the Patterns block, a test-only mu-plugin adds a stand-in "Local (test)" library with one pattern, since GenerateBlocks Pro can't run there. It also stands in for GB Pro's own Insert button filter, which replaces GB's button. The demo content is saved through kses, as an Author would save it, and is styled with ordinary GB local styles, as a user would style it.
 
 ```bash
 npm run test:e2e

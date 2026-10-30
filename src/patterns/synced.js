@@ -8,7 +8,7 @@
  *
  * While the library is open for a Patterns block, GB's Insert button is
  * wrapped (through GB's "generateblocks.patterns.insertPatternButton"
- * filter). If every pattern being inserted is a synced pattern on this site,
+ * filter, after GB Pro's). If every pattern being inserted is a synced pattern on this site,
  * with exactly the same content, a synced reference (core/block) to it is
  * inserted instead. Anything else (unsynced patterns, remote libraries, a
  * mix in Bulk Insert, or the library opened from GB's own toolbar button)
@@ -23,6 +23,9 @@ import { addQueryArgs } from '@wordpress/url';
 
 const MODAL = '.gblocks-pattern-library-modal';
 const PATTERN_ID = /^pattern-(\d+)$/;
+// After GB Pro's own filter (default priority 10), which ignores the button
+// it's given and returns a new one: wrapping before it would be discarded.
+const FILTER_PRIORITY = 100;
 
 // The open Patterns-block session: { paragraphId }, or null.
 let session = null;
@@ -171,6 +174,10 @@ function InsertButton( { children, patterns } ) {
 			return; // Opened from GB's own button: GB's behaviour.
 		}
 
+		if ( event.target?.closest?.( 'button' )?.disabled ) {
+			return; // GB (Pro) has blocked this insert.
+		}
+
 		const paragraph = select( blockEditorStore ).getBlock(
 			session.paragraphId
 		);
@@ -205,5 +212,6 @@ addFilter(
 	'boim/patterns-keep-synced',
 	( button, props ) => (
 		<InsertButton patterns={ props?.patterns }>{ button }</InsertButton>
-	)
+	),
+	FILTER_PRIORITY
 );
