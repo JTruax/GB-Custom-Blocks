@@ -142,4 +142,8 @@ npm run zip
 
 `npm run zip` writes `dist/boim-blocks.zip` from an allowlist of runtime files. PHP follows `phpcs.xml.dist` (WordPress-Extra, WordPress-Docs, PHPCompatibilityWP 7.4+).
 
+### Versions and releases
+
+See [VERSIONING.md](VERSIONING.md): how to choose the next version number, the seven places it lives, the release checklist (build, test, zip, tag), and what to do when adding a block.
+
 Requires WordPress 6.6+, PHP 7.4+, GenerateBlocks 2.0+.
