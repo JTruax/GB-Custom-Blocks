@@ -37,19 +37,6 @@ A GenerateBlocks Container with a muted, looping video background. It assigns no
 | An image where the video is off | Set a background image on the Container in GB's Styles (optionally only in GB's mobile breakpoint). |
 | A full-width banner in GeneratePress | Set the page's *Content Container* to *Full Width* (Layout meta box), or put the banner in a GP Element. |
 
-### Accessibility note
-
-A video that moves for more than 5 seconds with no way to pause it doesn't meet WCAG 2.2.2 (Pause, Stop, Hide, level A). This plugin doesn't include a pause button, by design. To limit the impact:
-
-- visitors who set "reduce motion" on their device never get the video;
-- the video layer is hidden from screen readers and has no sound.
-
-If a site needs WCAG 2.2 A/AA conformance, add your own pause control or keep banner videos under 5 seconds without looping.
-
-### Known limitations
-
-- URL sources can point at any host, like an image URL in a post.
-
 ## Patterns
 
 Adds a pattern from the GenerateBlocks Pattern Library exactly where you put the block.
