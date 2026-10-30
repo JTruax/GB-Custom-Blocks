@@ -86,7 +86,7 @@ A block for adding one of your site's **local patterns** (the Local library that
 3. Pick a pattern and click **Insert** (or use **Bulk Insert**). The pattern takes the Patterns block's place.
 4. If you close the library without choosing, the Patterns block stays as a placeholder. Click **Open local patterns** to try again, or delete it.
 
-**Synced patterns stay synced.** If the pattern you insert is one of your site's **synced** patterns, the Patterns block inserts it as a synced reference, so editing the pattern later updates it everywhere. GenerateBlocks' own Insert always inserts a copy, which is no longer synced. These are still inserted as copies, as GenerateBlocks does: unsynced patterns, patterns from remote libraries, and a Bulk Insert that mixes synced with other patterns. The same goes for patterns inserted from GenerateBlocks' own Pattern Library button.
+**Synced patterns stay synced.** If the pattern you insert is one of your site's **synced** patterns, the Patterns block inserts it as a synced reference, so editing the pattern later updates it everywhere. GenerateBlocks' own Insert always inserts a copy, which is no longer synced. This works from the Local library and from a GenerateCloud library that this site serves. These are still inserted as copies, as GenerateBlocks does: unsynced patterns, patterns from other sites' libraries, and a Bulk Insert that mixes synced with other patterns. The same goes for patterns inserted from GenerateBlocks' own Pattern Library button.
 
 **Turn on your Local library.** GenerateBlocks Pro makes each pattern Collection a library ("Local" is the default one), but it's **switched off** until you turn it on. Open the Pattern Library, choose **Manage Libraries**, and enable **Local**. Until then, the block says so and opens another library.
 
@@ -101,7 +101,7 @@ It uses GenerateBlocks' own Pattern Library rather than imitating it:
 - It finds the Local library through GB's `/generateblocks/v1/pattern-library/libraries` endpoint (switched-on libraries flagged `isLocal`, preferring Pro's default `local-patterns` collection), and sets it as the library to open first (`generateBlocksPatternLibrary.defaultOpenLibrary`) while the library is open.
 - It swaps itself for an empty paragraph in the same spot and opens the library with GB's `generateblocks.patternLibrary.open` action. GB's Insert replaces an empty selected paragraph with the pattern, so the pattern lands exactly there.
 - When the library closes, GB's setting is put back, and if nothing was inserted the Patterns block returns. Neither swap is an undo step.
-- **Synced patterns:** GB Pro lists each local pattern as `id: "pattern-<post ID>"` with its full content (`build_tree()` in GB Pro 2.8). While the library is open for a Patterns block, GB's Insert button is wrapped through GB's `generateblocks.patterns.insertPatternButton` filter, at a later priority than GB Pro's own filter on it (which replaces the button it's given). If every pattern being inserted is a synced `wp_block` on this site with identical content (compared as parsed blocks), a `core/block` reference replaces the paragraph instead and the library closes. Anything else goes to GB's Insert untouched.
+- **Synced patterns:** GB Pro lists each local pattern as `id: "pattern-<post ID>"` with its full content (`build_tree()` in GB Pro 2.8). While the library is open for a Patterns block, GB's Insert button is wrapped through GB's `generateblocks.patterns.insertPatternButton` filter, at a later priority than GB Pro's own filter on it (which replaces the button it's given). If every pattern being inserted is a synced `wp_block` on this site, a `core/block` reference replaces the paragraph instead and the library closes. "On this site" means the `pattern-<post ID>` is a synced pattern here, with the same title. Content isn't compared, since a GenerateCloud library served by this site lists the patterns with content prepared for other sites. Titles are compared as typed: GB Pro labels patterns with `get_the_title()`, whose typographic dashes and quotes are mapped back. Anything else goes to GB's Insert untouched.
 
 These are GenerateBlocks internals (GB 2.5 / GB Pro 2.8), not a documented API, so each is checked before use. A future GenerateBlocks release could change them.
 
@@ -125,7 +125,7 @@ The Playground command starts a local WordPress at http://127.0.0.1:9400 with Ge
 npm run test:e2e
 ```
 
-That runs 46 Playwright tests:
+That runs 47 Playwright tests:
 
 - **Assets:** nothing loads without a banner.
 - **Server markup:** checked before JS runs, including breakpoint and opacity parsing.
@@ -133,7 +133,7 @@ That runs 46 Playwright tests:
 - **Reduced motion** and an **axe scan** (light and dark).
 - **Forged configs.**
 - **Editor:** valid blocks, the variation, the panel, the two video source options, the opacity slider, and the video playing in the canvas (including the breakpoint).
-- **Patterns:** in the inserter; opens on the Local library; GB's Insert puts the pattern in the block's place (also inside a Container); closing keeps the placeholder with no extra undo steps; the button reopens it; no auto-open on load; the notice when GB's library is unavailable; nothing on the front end; listed beside Video Banner in the inserter; synced patterns inserted as synced references (unsynced, lookalike and GB's own button stay copies); a switched-off Local library explained.
+- **Patterns:** in the inserter; opens on the Local library; GB's Insert puts the pattern in the block's place (also inside a Container); closing keeps the placeholder with no extra undo steps; the button reopens it; no auto-open on load; the notice when GB's library is unavailable; nothing on the front end; listed beside Video Banner in the inserter; synced patterns inserted as synced references, also from a same-site GenerateCloud library (unsynced, another site's and GB's own button stay copies); a switched-off Local library explained.
 
 Locally the tests use your installed Chrome so MP4 plays. `node scripts/make-fixtures.js` regenerates the test videos.
 

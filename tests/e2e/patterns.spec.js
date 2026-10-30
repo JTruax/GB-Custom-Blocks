@@ -88,7 +88,9 @@ async function insertPatterns( page, index, inContainer = false ) {
 				root,
 				true,
 				0,
-				{ source: 'inserter_menu' }
+				{
+					source: 'inserter_menu',
+				}
 			);
 		},
 		[ index, inContainer ]
@@ -476,7 +478,22 @@ test.describe( 'Synced patterns', () => {
 		] );
 	} );
 
-	test( 'same ID but different content (another site) stays a copy', async ( {
+	test( 'a same-site GenerateCloud copy (same ID and title) stays synced', async ( {
+		page,
+	} ) => {
+		const id = await patternId( page, 'boim-cloud-pattern' );
+
+		await editPage( page, 'boim-patterns-cloud' );
+		await insertPatterns( page, 1 );
+		await insertFromLibrary( page, 'Test cloud pattern \u2013 same site' );
+
+		await expect
+			.poll( () => second( page ) )
+			.toEqual( { name: 'core/block', ref: id } );
+		expect( await invalidBlocks( page ) ).toEqual( [] );
+	} );
+
+	test( 'same ID but another title (another site) stays a copy', async ( {
 		page,
 	} ) => {
 		await editPage( page, 'boim-patterns-lookalike' );

@@ -1,24 +1,34 @@
 /**
  * Keep synced patterns synced when they're inserted from a Patterns block.
  *
- * GenerateBlocks Pro's Local library hands each of the site's patterns
- * (wp_block posts) to the library as { id: 'pattern-<post ID>', pattern:
- * <its content> }, and GB's Insert button parses that content: a copy. For
- * a synced pattern, that copy is no longer synced.
+ * GenerateBlocks Pro's Local library, and a GenerateCloud library served by
+ * this site, hand each of the site's patterns (wp_block posts) to the library
+ * as { id: 'pattern-<post ID>', label: <title>, pattern: <its content> }, and
+ * GB's Insert button parses that content: a copy. For a synced pattern, that
+ * copy is no longer synced.
  *
  * While the library is open for a Patterns block, GB's Insert button is
  * wrapped (through GB's "generateblocks.patterns.insertPatternButton"
- * filter, after GB Pro's). If every pattern being inserted is a synced pattern on this site,
- * with exactly the same content, a synced reference (core/block) to it is
- * inserted instead. Anything else (unsynced patterns, remote libraries, a
- * mix in Bulk Insert, or the library opened from GB's own toolbar button)
- * goes through GB's Insert unchanged.
+ * filter, after GB Pro's). If every pattern being inserted is one of this
+ * site's synced patterns, a synced reference (core/block) to it is inserted
+ * instead.
+ *
+ * "One of this site's synced patterns": its ID is a synced pattern here, with
+ * the same title. Content isn't compared: a GenerateCloud library lists the
+ * patterns with content prepared for other sites. Another site's pattern
+ * would have to reuse both the post ID and the title to be mistaken for one
+ * of ours.
+ *
+ * Anything else (unsynced patterns, other sites' patterns, a mix in Bulk
+ * Insert, or the library opened from GB's own toolbar button) goes through
+ * GB's Insert unchanged.
  */
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
-import { createBlock, parse, serialize } from '@wordpress/blocks';
+import { createBlock } from '@wordpress/blocks';
 import { dispatch, select } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
+import { decodeEntities } from '@wordpress/html-entities';
 import { addQueryArgs } from '@wordpress/url';
 
 const MODAL = '.gblocks-pattern-library-modal';
@@ -29,14 +39,14 @@ const FILTER_PRIORITY = 100;
 
 // The open Patterns-block session: { paragraphId }, or null.
 let session = null;
-// Synced patterns on this site: post ID → content. Filled when a session
+// Synced patterns on this site: post ID → title. Filled when a session
 // starts; read synchronously when Insert is clicked.
 let synced = new Map();
 
 /**
  * The site's synced patterns, every page of them.
  *
- * @return {Promise<Map<number, string>>} Post ID → content.
+ * @return {Promise<Map<number, string>>} Post ID → title.
  */
 async function fetchSyncedPatterns() {
 	const found = new Map();
@@ -47,7 +57,7 @@ async function fetchSyncedPatterns() {
 				context: 'edit',
 				per_page: 100,
 				page,
-				_fields: 'id,content,meta,wp_pattern_sync_status',
+				_fields: 'id,title,meta,wp_pattern_sync_status',
 			} ),
 			parse: false,
 		} );
@@ -60,11 +70,9 @@ async function fetchSyncedPatterns() {
 				'';
 
 			// '' (synced) and 'partial' (synced with overrides) both stay synced.
-			if (
-				'unsynced' !== status &&
-				'string' === typeof item?.content?.raw
-			) {
-				found.set( Number( item.id ), item.content.raw );
+			if ( 'unsynced' !== status ) {
+				// The REST API gives a pattern's title only as typed ("raw").
+				found.set( Number( item.id ), title( item?.title?.raw ) );
 			}
 		} );
 
@@ -87,7 +95,7 @@ async function fetchSyncedPatterns() {
 export function startSession( paragraphId ) {
 	session = { paragraphId };
 
-	// Fresh each time, so a pattern edited since doesn't count as identical.
+	// Fresh each time, so a pattern renamed or (un)synced since counts as it is now.
 	fetchSyncedPatterns()
 		.then( ( found ) => ( synced = found ) )
 		.catch( () => ( synced = new Map() ) );
@@ -97,24 +105,38 @@ export function endSession() {
 	session = null;
 }
 
+// wptexturize()'s typographic characters, back to what was typed.
+const TYPED = [
+	[ /[–—−]/g, '-' ],
+	[ /[‘’‚′]/g, "'" ],
+	[ /[“”„″]/g, '"' ],
+	[ /…/g, '...' ],
+	[ /×/g, 'x' ],
+	[ /\s+/g, ' ' ],
+];
+
 /**
- * Block content in one canonical form, so whitespace or formatting
- * differences between two copies of the same pattern don't matter.
+ * A title in one comparable form. GB Pro labels patterns with
+ * get_the_title() (typographic dashes and quotes, HTML entities), while the
+ * REST API gives a pattern's title as typed.
  *
- * @param {string} content Block markup.
- * @return {string|null} Canonical markup.
+ * @param {*} value Title.
+ * @return {string} Plain title, as typed.
  */
-function canonical( content ) {
-	try {
-		return serialize( parse( String( content ) ) );
-	} catch ( e ) {
-		return null;
+function title( value ) {
+	if ( 'string' !== typeof value ) {
+		return '';
 	}
+
+	return TYPED.reduce(
+		( text, [ from, to ] ) => text.replace( from, to ),
+		decodeEntities( value )
+	).trim();
 }
 
 /**
- * The synced pattern IDs to insert, if every pattern is a synced pattern on
- * this site with the same content; otherwise null.
+ * The synced pattern IDs to insert, if every pattern is one of this site's
+ * synced patterns (same ID and title); otherwise null.
  *
  * @param {Array} patterns Patterns GB's button would insert.
  * @return {number[]|null} Pattern post IDs.
@@ -130,14 +152,10 @@ function syncedIds( patterns ) {
 		const match = PATTERN_ID.exec( String( pattern?.id ?? '' ) );
 		const id = match ? Number( match[ 1 ] ) : 0;
 
-		if ( ! id || ! synced.has( id ) ) {
-			return null;
-		}
+		const ours = id ? synced.get( id ) : '';
 
-		const ours = canonical( synced.get( id ) );
-
-		// Same ID but different content (e.g. another site's library): not ours.
-		if ( null === ours || ours !== canonical( pattern.pattern ) ) {
+		// Same ID but another title (e.g. another site's library): not ours.
+		if ( ! ours || ours !== title( pattern.label ) ) {
 			return null;
 		}
 

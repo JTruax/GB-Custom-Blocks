@@ -102,8 +102,24 @@ add_action(
 						}
 					}
 
-					// Same id as the synced pattern, different content: like a
-					// pattern from another site's library. Must stay a copy.
+					// Like a GenerateCloud library served by this site: same id
+					// and title as a synced pattern, content prepared for other
+					// sites. Stays synced.
+					$cloud = get_page_by_path( 'boim-cloud-pattern', OBJECT, 'wp_block' );
+
+					if ( $cloud ) {
+						$prepared = str_replace( 'Pattern body.', 'Prepared for other sites.', $cloud->post_content );
+						$data[]   = array(
+							'id'         => 'pattern-' . $cloud->ID,
+							'label'      => get_the_title( $cloud ),
+							'pattern'    => $prepared,
+							'preview'    => $prepared,
+							'categories' => array( 'boim-test' ),
+						);
+					}
+
+					// Same id as the synced pattern, another title (and content):
+					// like a pattern from another site's library. Stays a copy.
 					$synced = get_page_by_path( 'boim-synced-pattern', OBJECT, 'wp_block' );
 
 					if ( $synced ) {

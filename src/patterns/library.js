@@ -26,7 +26,7 @@ import { doAction, hasAction } from '@wordpress/hooks';
 
 import { endSession, startSession } from './synced';
 
-export const BLOCK = 'boim/patterns';
+const BLOCK = 'boim/patterns';
 
 const OPEN_ACTION = 'generateblocks.patternLibrary.open';
 // GB's own handler. Checked by namespace: without one, hasAction() is true
@@ -47,7 +47,7 @@ export const handled = new Set();
  *
  * @return {boolean} Available.
  */
-export const isLibraryAvailable = () =>
+const isLibraryAvailable = () =>
 	hasAction( OPEN_ACTION, OPEN_NAMESPACE ) &&
 	Boolean( window.generateBlocksPatternLibrary ) &&
 	'object' === typeof window.generateBlocksPatternLibrary;

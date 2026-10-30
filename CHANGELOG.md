@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Fixed: Synced patterns inserted from the **Patterns** block were still detached on sites with GenerateBlocks Pro, whose own Insert button replaced the Patterns block's.
+- Fixed: Synced patterns inserted from a GenerateCloud library served by the same site (same pattern, content prepared for other sites) now stay synced too.
 
 ## 1.0.0 (2026-10-30)
 

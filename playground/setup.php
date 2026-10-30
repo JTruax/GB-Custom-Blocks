@@ -62,12 +62,15 @@ $boim_media = array(
 );
 update_option( 'boim_test_media', $boim_media, false );
 
-// Two site patterns (wp_block) for the Patterns block tests: one synced, one
-// not. The stand-in Local library lists them the way GB Pro does.
+// Site patterns (wp_block) for the Patterns block tests: synced, unsynced,
+// and a synced one the stand-in library lists like a same-site GenerateCloud
+// library (see mu-plugin-patterns.php). The title's " - " becomes an en dash
+// in get_the_title(), as GB Pro labels patterns.
 foreach (
 	array(
 		'boim-synced-pattern'   => array( 'Test synced pattern', '' ),
 		'boim-unsynced-pattern' => array( 'Test unsynced pattern', 'unsynced' ),
+		'boim-cloud-pattern'    => array( 'Test cloud pattern - same site', '' ),
 	) as $boim_slug => $boim_pattern
 ) {
 	if ( ! get_page_by_path( $boim_slug, OBJECT, 'wp_block' ) ) {
