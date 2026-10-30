@@ -95,7 +95,7 @@ Example for `0.2.0`; replace it with your number.
    git push origin main --follow-tags
    ```
 
-9. **Optional: a GitHub release with the zip attached**, so the exact file for each version is kept on GitHub:
+9. **A GitHub release with the zip attached.** Don't skip it: the README's **Download** link always serves `boim-blocks.zip` from the latest release, so the file must keep that name. It also keeps the exact file for each version on GitHub:
 
    ```bash
    gh release create v0.2.0 dist/boim-blocks.zip --title "BOIM Blocks 0.2.0" --notes-file <(sed -n '/^## 0.2.0/,/^## /p' CHANGELOG.md | sed '1d;$d')

@@ -5,6 +5,16 @@ A collection of custom blocks that are compatible with GenerateBlocks 2.x:
 - **[Video Banner](#video-banner)**: a GenerateBlocks Container with a looping video background.
 - **[Patterns](#patterns)**: adds one of your site's local patterns from the GenerateBlocks Pattern Library, right where you put the block.
 
+## Download
+
+**[Download boim-blocks.zip](https://github.com/JTruax/GB-Custom-Blocks/releases/latest/download/boim-blocks.zip)** (latest release, ready to install in WordPress)
+
+In WordPress, go to **Plugins → Add New Plugin → Upload Plugin**, choose the zip and click **Install Now**, then **Activate**. To update, upload the new zip the same way and choose **Replace current with uploaded**.
+
+Use this zip, not GitHub's green **Code → Download ZIP** button: that one is the source code, without the built files, and won't run as a plugin. Older versions are on the [Releases](https://github.com/JTruax/GB-Custom-Blocks/releases) page.
+
+Requires GenerateBlocks 2.0+ (and GenerateBlocks Pro for the Local pattern library).
+
 ## Video Banner
 
 A **Video Banner** for GenerateBlocks 2.x: a normal GenerateBlocks **Container** that plays a video file as its background, muted and looping. You can switch the video off below a screen width you choose. Everything you see is a GenerateBlocks block, styled in GB's own Styles panel and Global Styles. The plugin only adds the video, and assigns no classes or styles: you style the banner yourself.
