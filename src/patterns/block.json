@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "boim/patterns",
-	"version": "0.2.0",
+	"version": "1.0.0",
 	"title": "Patterns",
 	"category": "generateblocks",
 	"description": "Insert one of your site's local patterns from the GenerateBlocks Pattern Library.",

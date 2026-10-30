@@ -8,6 +8,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 import Edit from './edit';
 import { patternsIcon } from './icon';
+import './synced';
 import './editor.scss';
 
 registerBlockType( metadata.name, {

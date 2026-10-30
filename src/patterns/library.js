@@ -12,6 +12,9 @@
  * the library closes, put GB's setting back, and if nothing was inserted,
  * swap the paragraph back to a Patterns block. Neither swap is an undo step.
  *
+ * While it's open, synced patterns are inserted as synced references rather
+ * than copies (see synced.js).
+ *
  * None of this is documented GenerateBlocks API, so every piece is checked
  * first and fails quietly (the block then explains in the editor).
  */
@@ -21,6 +24,8 @@ import { createBlock } from '@wordpress/blocks';
 import { dispatch, select } from '@wordpress/data';
 import { doAction, hasAction } from '@wordpress/hooks';
 
+import { endSession, startSession } from './synced';
+
 export const BLOCK = 'boim/patterns';
 
 const OPEN_ACTION = 'generateblocks.patternLibrary.open';
@@ -28,8 +33,10 @@ const OPEN_ACTION = 'generateblocks.patternLibrary.open';
 // for any action that was ever registered, even after it's removed.
 const OPEN_NAMESPACE = 'generateblocks/pattern-library';
 const MODAL = '.gblocks-pattern-library-modal';
-const LIBRARIES =
-	'/generateblocks/v1/pattern-library/libraries?is_enabled=true';
+// Without is_enabled, GB returns every library with its on/off state.
+const LIBRARIES = '/generateblocks/v1/pattern-library/libraries';
+// GB Pro's default Collection, the one it calls "Local".
+const DEFAULT_LOCAL = 'local-patterns';
 
 // Blocks that must not open the library by themselves: ones that already
 // did, and ones put back after the library closed.
@@ -47,30 +54,45 @@ export const isLibraryAvailable = () =>
 
 let localLibrary;
 
+const isTrue = ( value ) => [ true, 1, '1', 'true' ].includes( value );
+
 /**
- * The id of the site's Local library (GenerateBlocks Pro), or null. Looked
- * up once per editor session.
+ * The site's Local library (GenerateBlocks Pro). Pro makes each pattern
+ * Collection a local library, switched off until it's turned on in the
+ * Pattern Library's Manage Libraries; GB only shows switched-on libraries.
+ * Looked up once per editor session.
  *
- * @return {Promise<string|null>} Library id.
+ * @return {Promise<{id: string|null, disabled: boolean}>} The switched-on
+ *         Local library to open ("Local" first), and whether there's a local
+ *         library that's switched off when none is on.
  */
-export function getLocalLibraryId() {
+export function getLocalLibrary() {
 	if ( ! localLibrary ) {
 		localLibrary = apiFetch( { path: LIBRARIES } )
 			.then( ( response ) => {
-				const libraries = Array.isArray( response?.data )
-					? response.data
-					: [];
-				const local = libraries.find(
+				const locals = (
+					Array.isArray( response?.data ) ? response.data : []
+				).filter(
 					( library ) =>
 						library &&
-						[ true, 1, '1', 'true' ].includes( library.isLocal ) &&
+						isTrue( library.isLocal ) &&
 						'string' === typeof library.id &&
 						library.id
 				);
+				const enabled = locals.filter( ( library ) =>
+					isTrue( library.isEnabled )
+				);
+				const pick =
+					enabled.find(
+						( library ) => DEFAULT_LOCAL === library.id
+					) || enabled[ 0 ];
 
-				return local ? local.id : null;
+				return {
+					id: pick ? pick.id : null,
+					disabled: ! pick && locals.length > 0,
+				};
 			} )
-			.catch( () => null );
+			.catch( () => ( { id: null, disabled: false } ) );
 	}
 
 	return localLibrary;
@@ -157,7 +179,7 @@ export async function openLibrary( clientId ) {
 		return 'skipped';
 	}
 
-	const localId = await getLocalLibraryId();
+	const { id: localId } = await getLocalLibrary();
 
 	// The block may have been removed while the lookup ran.
 	if ( BLOCK !== select( blockEditorStore ).getBlock( clientId )?.name ) {
@@ -173,9 +195,11 @@ export async function openLibrary( clientId ) {
 	}
 
 	swap( clientId, paragraph, false );
+	startSession( paragraph.clientId );
 
 	watchModal( () => {
 		settings.defaultOpenLibrary = previous;
+		endSession();
 
 		// Nothing inserted: the paragraph is still there and still empty.
 		const block = select( blockEditorStore ).getBlock( paragraph.clientId );

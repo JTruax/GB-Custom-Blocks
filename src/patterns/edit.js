@@ -12,7 +12,7 @@ import { useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 import { patternsIcon } from './icon';
-import { getLocalLibraryId, handled, openLibrary } from './library';
+import { getLocalLibrary, handled, openLibrary } from './library';
 
 export default function Edit( { clientId } ) {
 	// Added just now (inserter, quick inserter or "/patterns"), not loaded
@@ -31,12 +31,12 @@ export default function Edit( { clientId } ) {
 	// Only set when opening actually failed: GB registers its library while
 	// the editor loads, so an early check could be wrong.
 	const [ unavailable, setUnavailable ] = useState( false );
-	const [ hasLocal, setHasLocal ] = useState( null );
+	const [ local, setLocal ] = useState( null );
 
 	useEffect( () => {
 		let active = true;
 
-		getLocalLibraryId().then( ( id ) => active && setHasLocal( !! id ) );
+		getLocalLibrary().then( ( found ) => active && setLocal( found ) );
 
 		return () => {
 			active = false;
@@ -61,7 +61,12 @@ export default function Edit( { clientId } ) {
 		'boim-blocks'
 	);
 
-	if ( false === hasLocal ) {
+	if ( local?.disabled ) {
+		instructions = __(
+			'Your Local pattern library is switched off, so this opens the GenerateBlocks Pattern Library on another library. To use your local patterns, open the Pattern Library, choose Manage Libraries, and turn on Local.',
+			'boim-blocks'
+		);
+	} else if ( local && ! local.id ) {
 		instructions = __(
 			'This site has no Local pattern library (it comes with GenerateBlocks Pro), so this opens the GenerateBlocks Pattern Library on its default library. The pattern you choose takes this block’s place.',
 			'boim-blocks'

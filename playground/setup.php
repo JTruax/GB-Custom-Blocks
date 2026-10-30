@@ -62,6 +62,31 @@ $boim_media = array(
 );
 update_option( 'boim_test_media', $boim_media, false );
 
+// Two site patterns (wp_block) for the Patterns block tests: one synced, one
+// not. The stand-in Local library lists them the way GB Pro does.
+foreach (
+	array(
+		'boim-synced-pattern'   => array( 'Test synced pattern', '' ),
+		'boim-unsynced-pattern' => array( 'Test unsynced pattern', 'unsynced' ),
+	) as $boim_slug => $boim_pattern
+) {
+	if ( ! get_page_by_path( $boim_slug, OBJECT, 'wp_block' ) ) {
+		$boim_id = wp_insert_post(
+			array(
+				'post_type'    => 'wp_block',
+				'post_status'  => 'publish',
+				'post_name'    => $boim_slug,
+				'post_title'   => $boim_pattern[0],
+				'post_content' => '<!-- wp:heading --><h2 class="wp-block-heading">' . $boim_pattern[0] . '</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Pattern body.</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		if ( $boim_pattern[1] ) {
+			update_post_meta( $boim_id, 'wp_pattern_sync_status', $boim_pattern[1] );
+		}
+	}
+}
+
 require $boim_dir . 'playground/demo/markup.php';
 
 $boim_content = boim_demo_markup( $boim_media );

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.0 (2026-10-30)
+
+- Fixed: Synced patterns inserted from the **Patterns** block now stay synced (inserted as a synced reference). GenerateBlocks' Insert always inserted a copy. Unsynced and remote patterns are still inserted as copies.
+- Changed: The **Patterns** block now tells you when your Local pattern library is switched off in GenerateBlocks' Manage Libraries, instead of silently opening another library.
+
 ## 0.2.0 (2026-10-30)
 
 - New: **Patterns** block. Adding it opens the GenerateBlocks Pattern Library on the site's Local library (GenerateBlocks Pro); the pattern inserted takes the block's place. Closed without choosing, it stays as a placeholder that renders nothing on the front end.

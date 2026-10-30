@@ -76,20 +76,52 @@ add_action(
 				'permission_callback' => $can_edit,
 				'callback'            => static function ( WP_REST_Request $request ) use ( $is_test_library ) {
 					$pattern = '<!-- wp:heading --><h2 class="wp-block-heading">Inserted local pattern</h2><!-- /wp:heading --><!-- wp:paragraph --><p>From the Local (test) library.</p><!-- /wp:paragraph -->';
+					$data    = array(
+						array(
+							'id'         => 'boim-test-pattern',
+							'label'      => 'Test local pattern',
+							'pattern'    => $pattern,
+							'preview'    => $pattern,
+							'categories' => array( 'boim-test' ),
+						),
+					);
+
+					// The site's test patterns, the way GB Pro's Local library
+					// lists wp_block posts: id "pattern-<post ID>", full content.
+					foreach ( array( 'boim-synced-pattern', 'boim-unsynced-pattern' ) as $slug ) {
+						$post = get_page_by_path( $slug, OBJECT, 'wp_block' );
+
+						if ( $post ) {
+							$data[] = array(
+								'id'         => 'pattern-' . $post->ID,
+								'label'      => $post->post_title,
+								'pattern'    => $post->post_content,
+								'preview'    => $post->post_content,
+								'categories' => array( 'boim-test' ),
+							);
+						}
+					}
+
+					// Same id as the synced pattern, different content: like a
+					// pattern from another site's library. Must stay a copy.
+					$synced = get_page_by_path( 'boim-synced-pattern', OBJECT, 'wp_block' );
+
+					if ( $synced ) {
+						$lookalike = '<!-- wp:paragraph --><p>Lookalike from another site.</p><!-- /wp:paragraph -->';
+						$data[]    = array(
+							'id'         => 'pattern-' . $synced->ID,
+							'label'      => 'Lookalike pattern',
+							'pattern'    => $lookalike,
+							'preview'    => $lookalike,
+							'categories' => array( 'boim-test' ),
+						);
+					}
 
 					return rest_ensure_response(
 						array(
 							'success'  => true,
 							'response' => array(
-								'data' => $is_test_library( $request ) ? array(
-									array(
-										'id'         => 'boim-test-pattern',
-										'label'      => 'Test local pattern',
-										'pattern'    => $pattern,
-										'preview'    => $pattern,
-										'categories' => array( 'boim-test' ),
-									),
-								) : array(),
+								'data' => $is_test_library( $request ) ? $data : array(),
 							),
 						)
 					);

@@ -131,6 +131,23 @@ const closeLibrary = ( page ) =>
 		.getByRole( 'button', { name: 'Close Pattern Library' } )
 		.click();
 
+/**
+ * GB's Insert button on one pattern in the open library.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string}                          label Pattern title.
+ */
+async function insertFromLibrary( page, label ) {
+	const card = page.locator( MODAL ).locator( '.gb-pattern-details', {
+		has: page.getByRole( 'heading', { name: label, exact: true } ),
+	} );
+
+	await card.scrollIntoViewIfNeeded();
+	await card.hover();
+	await card.getByRole( 'button', { name: 'Insert', exact: true } ).click();
+	await expect( page.locator( MODAL ) ).toHaveCount( 0 );
+}
+
 const INSIDE = [ 'generateblocks/element', [ [ 'core/paragraph', 'Inside' ] ] ];
 
 test( 'Patterns is a GenerateBlocks block in the inserter', async ( {
@@ -179,8 +196,7 @@ test( 'adding it opens the Local library; the pattern inserted takes its place',
 
 	// GenerateBlocks' own Insert button.
 	await expect( modal.getByText( 'Test local pattern' ) ).toBeVisible();
-	await modal.getByRole( 'button', { name: 'Insert', exact: true } ).click();
-	await expect( modal ).toHaveCount( 0 );
+	await insertFromLibrary( page, 'Test local pattern' );
 
 	expect( await outline( page ) ).toEqual( [
 		[ 'core/paragraph', 'Before' ],
@@ -200,8 +216,7 @@ test( 'inside a Container, the pattern lands inside it', async ( { page } ) => {
 
 	const modal = page.locator( MODAL );
 	await expect( modal.getByText( 'Test local pattern' ) ).toBeVisible();
-	await modal.getByRole( 'button', { name: 'Insert', exact: true } ).click();
-	await expect( modal ).toHaveCount( 0 );
+	await insertFromLibrary( page, 'Test local pattern' );
 
 	expect( ( await outline( page ) )[ 1 ] ).toEqual( [
 		'generateblocks/element',
@@ -404,4 +419,134 @@ test( 'the BOIM blocks sit side by side in the GenerateBlocks category', async (
 		'Video Banner',
 		'Container',
 	] );
+} );
+
+test.describe( 'Synced patterns', () => {
+	const patternId = async ( page, slug ) =>
+		( await rest( page, '/wp/v2/blocks', { params: { slug } } ) )[ 0 ].id;
+
+	const second = ( page ) =>
+		page.evaluate( () => {
+			const block = window.wp.data
+				.select( 'core/block-editor' )
+				.getBlocks()[ 1 ];
+
+			return { name: block.name, ref: block.attributes.ref };
+		} );
+
+	test( 'a synced pattern stays synced (inserted as a reference)', async ( {
+		page,
+	} ) => {
+		const id = await patternId( page, 'boim-synced-pattern' );
+
+		await editPage( page, 'boim-patterns-synced' );
+		await insertPatterns( page, 1 );
+		await expect(
+			page.locator( MODAL ).getByText( 'Test synced pattern' )
+		).toBeVisible();
+
+		await insertFromLibrary( page, 'Test synced pattern' );
+
+		await expect
+			.poll( () => second( page ) )
+			.toEqual( {
+				name: 'core/block',
+				ref: id,
+			} );
+		const names = ( await outline( page ) ).map( ( [ name ] ) => name );
+		expect( names ).toEqual( [
+			'core/paragraph',
+			'core/block',
+			'generateblocks/element',
+			'core/paragraph',
+		] );
+		expect( await invalidBlocks( page ) ).toEqual( [] );
+	} );
+
+	test( 'an unsynced pattern is inserted as a copy, as GB does', async ( {
+		page,
+	} ) => {
+		await editPage( page, 'boim-patterns-unsynced' );
+		await insertPatterns( page, 1 );
+		await insertFromLibrary( page, 'Test unsynced pattern' );
+
+		expect( ( await outline( page ) ).slice( 1, 3 ) ).toEqual( [
+			[ 'core/heading', 'Test unsynced pattern' ],
+			[ 'core/paragraph', 'Pattern body.' ],
+		] );
+	} );
+
+	test( 'same ID but different content (another site) stays a copy', async ( {
+		page,
+	} ) => {
+		await editPage( page, 'boim-patterns-lookalike' );
+		await insertPatterns( page, 1 );
+		await insertFromLibrary( page, 'Lookalike pattern' );
+
+		expect( ( await outline( page ) )[ 1 ] ).toEqual( [
+			'core/paragraph',
+			'Lookalike from another site.',
+		] );
+	} );
+
+	test( "GB's own Pattern Library button keeps GB's behaviour (a copy)", async ( {
+		page,
+	} ) => {
+		await editPage( page, 'boim-patterns-toolbar' );
+
+		// Select "Before", then open GB's library from its toolbar button.
+		await page.evaluate( () => {
+			const { select, dispatch } = window.wp.data;
+			dispatch( 'core/block-editor' ).selectBlock(
+				select( 'core/block-editor' ).getBlocks()[ 0 ].clientId
+			);
+		} );
+		await page
+			.getByRole( 'button', { name: 'Pattern Library', exact: true } )
+			.first()
+			.click();
+
+		const modal = page.locator( MODAL );
+		await expect( modal ).toBeVisible();
+		await modal.getByRole( 'button', { name: 'Local (test)' } ).click();
+		await insertFromLibrary( page, 'Test synced pattern' );
+
+		const names = ( await outline( page ) ).map( ( [ name ] ) => name );
+		expect( names ).not.toContain( 'core/block' );
+		expect( names ).toContain( 'core/heading' );
+	} );
+
+	test( 'a switched-off Local library is explained in the block', async ( {
+		page,
+	} ) => {
+		// GB's library list as on a site whose Local library is switched off.
+		await page.route(
+			// Plain or %2F-encoded in ?rest_route=; not GB's own is_enabled request.
+			/pattern-library(?:\/|%2F)libraries(?!.*is_enabled)/i,
+			( route ) =>
+				route.fulfill( {
+					json: {
+						success: true,
+						data: [
+							{
+								id: 'local-patterns',
+								name: 'Local',
+								isLocal: true,
+								isEnabled: false,
+							},
+						],
+					},
+				} )
+		);
+
+		await editPage( page, 'boim-patterns-local-off', [
+			'<!-- wp:boim/patterns /-->',
+		] );
+
+		await expect(
+			page
+				.frameLocator( 'iframe[name="editor-canvas"]' )
+				.getByText( /Local pattern library is switched off/ )
+		).toBeVisible();
+	} );
 } );
