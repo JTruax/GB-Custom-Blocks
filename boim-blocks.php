@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       BOIM Blocks
  * Description:       A collection of custom blocks that are compatible with GenerateBlocks.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
  * License:           GPL-2.0-or-later
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BOIM_VERSION', '0.1.0' );
+define( 'BOIM_VERSION', '0.2.0' );
 define( 'BOIM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BOIM_URL', plugin_dir_url( __FILE__ ) );
 
@@ -100,6 +100,33 @@ function boim_editor_assets() {
 
 	if ( $container && ! in_array( 'boim-video-banner-editor', $container->deps, true ) ) {
 		$container->deps[] = 'boim-video-banner-editor';
+	}
+}
+
+add_action( 'enqueue_block_editor_assets', 'boim_group_blocks_in_inserter' );
+/**
+ * The inserter lists a category's blocks in the order their editor scripts
+ * register them. The Video Banner is a variation of GenerateBlocks' Container,
+ * so it appears where the Container does. Loading the Patterns script after
+ * GB's Text block and before its Container puts the two BOIM blocks side by
+ * side: Text, Headline, Button, Patterns, Video Banner, Container, …
+ */
+function boim_group_blocks_in_inserter() {
+	$scripts   = wp_scripts();
+	$patterns  = $scripts->query( generate_block_asset_handle( 'boim/patterns', 'editorScript' ), 'registered' );
+	$container = $scripts->query( generate_block_asset_handle( 'generateblocks/element', 'editorScript' ), 'registered' );
+	$text      = generate_block_asset_handle( 'generateblocks/text', 'editorScript' );
+
+	if ( ! $patterns || ! $container || ! $scripts->query( $text, 'registered' ) ) {
+		return;
+	}
+
+	if ( ! in_array( $text, $patterns->deps, true ) ) {
+		$patterns->deps[] = $text;
+	}
+
+	if ( ! in_array( $patterns->handle, $container->deps, true ) ) {
+		$container->deps[] = $patterns->handle;
 	}
 }
 

@@ -367,3 +367,41 @@ test( 'typing /patterns adds it and opens the library', async ( { page } ) => {
 		)
 		.toEqual( [ 'core/paragraph', 'boim/patterns' ] );
 } );
+
+test( 'the BOIM blocks sit side by side in the GenerateBlocks category', async ( {
+	page,
+} ) => {
+	await editPage( page, 'boim-patterns-order' );
+	await page
+		.getByRole( 'button', { name: /block inserter/i } )
+		.first()
+		.click();
+
+	const heading = page
+		.getByRole( 'heading', { name: 'GenerateBlocks', exact: true } )
+		.first();
+	await heading.scrollIntoViewIfNeeded();
+
+	const names = await page
+		.locator( '.block-editor-inserter__panel-header', { has: heading } )
+		.locator( '..' )
+		.getByRole( 'option' )
+		.allInnerTexts();
+	const items = names.map( ( name ) => name.trim() );
+	const patterns = items.indexOf( 'Patterns' );
+	const banner = items.indexOf( 'Video Banner' );
+
+	// Patterns comes straight before Video Banner (which sits with GB's
+	// Container), so both are on the same row of the 3-column grid.
+	expect( patterns ).toBeGreaterThan( -1 );
+	expect( banner ).toBe( patterns + 1 );
+	expect( Math.floor( patterns / 3 ) ).toBe( Math.floor( banner / 3 ) );
+	expect( items.slice( 0, 6 ) ).toEqual( [
+		'Text',
+		'Headline',
+		'Button',
+		'Patterns',
+		'Video Banner',
+		'Container',
+	] );
+} );

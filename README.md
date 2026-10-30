@@ -120,7 +120,7 @@ The Playground command starts a local WordPress at http://127.0.0.1:9400 with Ge
 npm run test:e2e
 ```
 
-That runs 40 Playwright tests:
+That runs 41 Playwright tests:
 
 - **Assets:** nothing loads without a banner.
 - **Server markup:** checked before JS runs, including breakpoint and opacity parsing.
@@ -128,7 +128,7 @@ That runs 40 Playwright tests:
 - **Reduced motion** and an **axe scan** (light and dark).
 - **Forged configs.**
 - **Editor:** valid blocks, the variation, the panel, the two video source options, the opacity slider, and the video playing in the canvas (including the breakpoint).
-- **Patterns:** in the inserter; opens on the Local library; GB's Insert puts the pattern in the block's place (also inside a Container); closing keeps the placeholder with no extra undo steps; the button reopens it; no auto-open on load; the notice when GB's library is unavailable; nothing on the front end.
+- **Patterns:** in the inserter; opens on the Local library; GB's Insert puts the pattern in the block's place (also inside a Container); closing keeps the placeholder with no extra undo steps; the button reopens it; no auto-open on load; the notice when GB's library is unavailable; nothing on the front end; listed beside Video Banner in the inserter.
 
 Locally the tests use your installed Chrome so MP4 plays. `node scripts/make-fixtures.js` regenerates the test videos.
 

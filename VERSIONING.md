@@ -125,7 +125,3 @@ A new block always means at least a **MINOR** release.
 ## 6. Raising requirements
 
 The minimums live in `boim-blocks.php` (`Requires at least:`, `Requires PHP:`, the GenerateBlocks check in `boim_generateblocks_notice()`) and `readme.txt` (`Requires at least:`, `Requires PHP:`). Also update `minimum_wp_version` and `testVersion` in `phpcs.xml.dist`. Raising any of them is at least a **MINOR** release, with a changelog line saying what's now required. Make it **MAJOR** if sites still on the old version would lose features.
-
-## Where things stand now
-
-The zip shared so far says **0.1.0**, but it already includes the **Patterns** block, which `CHANGELOG.md` lists under **Unreleased**. Patterns is a new block, so the next proper release is **0.2.0**. Once you've finished testing, run section 3 with `0.2.0`; sites will then show a version that matches what they're running.

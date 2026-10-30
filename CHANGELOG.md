@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 0.2.0 (2026-10-30)
+
 - New: **Patterns** block. Adding it opens the GenerateBlocks Pattern Library on the site's Local library (GenerateBlocks Pro); the pattern inserted takes the block's place. Closed without choosing, it stays as a placeholder that renders nothing on the front end.
+- Changed: The BOIM blocks are listed side by side in the GenerateBlocks category of the inserter (Patterns, then Video Banner).
 
 ## 0.1.0 (2026-10-16)
 

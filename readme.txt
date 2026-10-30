@@ -4,7 +4,7 @@ Tags: generateblocks, video background, banner, hero, block
 Requires at least: 6.6
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,10 @@ In the Container's Styles add the nested selector `& .boim-video-banner__media >
 The Container's own background. Set a colour or image in its GenerateBlocks Styles.
 
 == Changelog ==
+
+= 0.2.0 =
+* New: Patterns block. Opens the GenerateBlocks Pattern Library on your Local library; the pattern you insert takes the block's place.
+* Changed: The BOIM blocks are listed side by side in the inserter.
 
 = 0.1.0 =
 * First release: Video Banner.
