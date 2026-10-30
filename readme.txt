@@ -56,6 +56,7 @@ The Container's own background. Set a colour or image in its GenerateBlocks Styl
 = 1.0.1 =
 * Fixed: Synced patterns inserted from the Patterns block stay synced on sites with GenerateBlocks Pro.
 * Fixed: Synced patterns from a GenerateCloud library served by the same site stay synced too.
+* Changed: The Plugins screen shows the author, Blue Ocean Interactive Marketing.
 
 = 1.0.0 =
 * Fixed: Synced patterns inserted from the Patterns block stay synced.
