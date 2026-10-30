@@ -1,6 +1,6 @@
 {
 	"name": "boim-blocks",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"description": "BOIM Blocks: a Video Banner for GenerateBlocks.",
 	"license": "GPL-2.0-or-later",

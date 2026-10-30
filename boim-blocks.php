@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       BOIM Blocks
  * Description:       A collection of custom blocks that are compatible with GenerateBlocks.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.6
  * Requires PHP:      7.4
  * License:           GPL-2.0-or-later
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BOIM_VERSION', '1.0.0' );
+define( 'BOIM_VERSION', '1.0.1' );
 define( 'BOIM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BOIM_URL', plugin_dir_url( __FILE__ ) );
 
